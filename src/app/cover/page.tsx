@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Eye, EyeOff, Trash2, Upload, Plus, Save, X } from "lucide-react"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
+import { toast } from "sonner"
 
 type Cover = {
   id: string
@@ -38,40 +39,45 @@ export default function CoverPage() {
     })
     const data = await res.json()
     setItems((prev) => [data, ...prev])
+    toast.success("Cover creata")
   }
 
   async function uploadImage(file: File) {
     const supabase = getSupabaseBrowser()
-    const path = `cover/${Date.now()}-${file.name}`
+    const safeName = sanitizeFileName(file.name)
+    const path = `cover/${Date.now()}-${safeName}`
     const { error } = await supabase.storage.from("images").upload(path, file, {
       cacheControl: "3600",
       upsert: true,
       contentType: file.type,
     })
     if (error) {
-      alert(`Upload fallito: ${error.message}`)
+      toast.error(`Upload fallito: ${error.message}`)
       return
     }
     const { data } = supabase.storage.from("images").getPublicUrl(path)
     setForm((f) => ({ ...f, image_url: data.publicUrl }))
+    toast.success("Immagine caricata")
   }
 
   async function uploadImageToDraft(file: File) {
     setDraft((d) => ({ ...d, uploading: true }))
     const supabase = getSupabaseBrowser()
-    const path = `cover/${Date.now()}-${file.name}`
+    const safeName = sanitizeFileName(file.name)
+    const path = `cover/${Date.now()}-${safeName}`
     const { error } = await supabase.storage.from("images").upload(path, file, {
       cacheControl: "3600",
       upsert: true,
       contentType: file.type,
     })
     if (error) {
-      alert(`Upload fallito: ${error.message}`)
+      toast.error(`Upload fallito: ${error.message}`)
       setDraft((d) => ({ ...d, uploading: false }))
       return
     }
     const { data } = supabase.storage.from("images").getPublicUrl(path)
     setDraft((d) => ({ ...d, image_url: data.publicUrl, uploading: false }))
+    toast.success("Immagine caricata")
   }
 
   function openAdd() {
@@ -85,6 +91,7 @@ export default function CoverPage() {
     if (!draft.name || !draft.image_url) return
     await create({ name: draft.name, image_url: draft.image_url })
     setIsAddOpen(false)
+    toast.success("Cover salvata")
   }
 
   async function update(id: string, patch: Partial<Cover>) {
@@ -95,6 +102,7 @@ export default function CoverPage() {
     })
     const updated = await res.json()
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)))
+    toast.success("Cover aggiornata")
   }
 
   async function remove(id: string) {
@@ -102,6 +110,7 @@ export default function CoverPage() {
     if (!ok) return
     await fetch(`/api/cover?id=${id}`, { method: "DELETE" })
     setItems((prev) => prev.filter((i) => i.id !== id))
+    toast.success("Cover eliminata")
   }
 
   return (
@@ -211,6 +220,23 @@ export default function CoverPage() {
       )}
     </div>
   )
+}
+
+function sanitizeFileName(name: string): string {
+  const withoutDiacritics = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+  const safe = withoutDiacritics
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/\.+$/, "")
+    .toLowerCase()
+  const match = safe.match(/^(.*?)(\.[a-z0-9]+)$/i)
+  const base = match ? match[1] : safe
+  const ext = match ? match[2] : ""
+  const trimmedBase = base.slice(-100)
+  return `${trimmedBase}${ext}`
 }
 
 

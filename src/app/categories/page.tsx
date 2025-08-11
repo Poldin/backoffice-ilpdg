@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Eye, EyeOff, Trash2, Save, X, Upload, Plus } from "lucide-react"
+import { toast } from "sonner"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 
 type Category = {
@@ -118,6 +119,26 @@ export default function CategoriesPage() {
     })
     const created = await res.json()
     setCategories((prev) => [created, ...prev])
+    toast.success("Categoria creata")
+  }
+
+  function sanitizeFileName(name: string): string {
+    // Remove diacritics, keep only safe chars, collapse dashes, limit length
+    const withoutDiacritics = name
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+    const safe = withoutDiacritics
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+/, "")
+      .replace(/\.+$/, "")
+      .toLowerCase()
+    // keep extension if present
+    const match = safe.match(/^(.*?)(\.[a-z0-9]+)$/i)
+    const base = match ? match[1] : safe
+    const ext = match ? match[2] : ""
+    const trimmedBase = base.slice(-100)
+    return `${trimmedBase}${ext}`
   }
 
   async function toggleCategoryVisibility(id: string, current: boolean | null) {
@@ -128,6 +149,7 @@ export default function CategoriesPage() {
     })
     const updated = await res.json()
     setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)))
+    toast.success(updated.is_public ? "Categoria pubblicata" : "Categoria nascosta")
   }
 
   async function removeCategory(id: string) {
@@ -136,6 +158,7 @@ export default function CategoriesPage() {
     await fetch(`/api/categories?id=${id}`, { method: "DELETE" })
     setCategories((prev) => prev.filter((c) => c.id !== id))
     setItems((prev) => prev.filter((i) => i.category_id !== id))
+    toast.success("Categoria eliminata")
   }
 
   async function createItem(payload: {
@@ -152,6 +175,7 @@ export default function CategoriesPage() {
     })
     const created = await res.json()
     setItems((prev) => [created, ...prev])
+    toast.success("Prodotto creato")
   }
 
   async function toggleItemVisibility(id: string, current: boolean | null) {
@@ -162,6 +186,7 @@ export default function CategoriesPage() {
     })
     const updated = await res.json()
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)))
+    toast.success(updated.is_public ? "Prodotto pubblicato" : "Prodotto nascosto")
   }
 
   async function removeItem(id: string) {
@@ -170,6 +195,7 @@ export default function CategoriesPage() {
     await fetch(`/api/categories?id=${id}&type=item`, { method: "DELETE" })
     setItems((prev) => prev.filter((i) => i.id !== id))
     if (selectedItemId === id) setSelectedItemId(null)
+    toast.success("Prodotto eliminato")
   }
 
   function openDetails(item: CategoryItem) {
@@ -197,11 +223,13 @@ export default function CategoriesPage() {
     })
     const updated = await res.json()
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+    toast.success("Dettagli salvati")
   }
 
   function openAddCategory() {
     setCategoryDraft({ name: "", is_public: true })
     setIsAddCategoryOpen(true)
+    toast.message("Compila i campi e salva")
   }
   function closeAddCategory() {
     setIsAddCategoryOpen(false)
@@ -215,6 +243,7 @@ export default function CategoriesPage() {
   function openAddItem(categoryId: string) {
     setItemDraft({ category_id: categoryId, name: "", description: "", image_url: "", is_public: true, uploading: false })
     setIsAddItemOpen(true)
+    toast.message("Carica un'immagine e compila i campi")
   }
   function closeAddItem() {
     setIsAddItemOpen(false)
@@ -234,19 +263,21 @@ export default function CategoriesPage() {
   async function uploadItemImage(file: File) {
     setItemDraft((d) => ({ ...d, uploading: true }))
     const supabase = getSupabaseBrowser()
-    const path = `products/${itemDraft.category_id}/${Date.now()}-${file.name}`
+    const safeName = sanitizeFileName(file.name)
+    const path = `products/${itemDraft.category_id}/${Date.now()}-${safeName}`
     const { error } = await supabase.storage.from("images").upload(path, file, {
       cacheControl: "3600",
       upsert: true,
       contentType: file.type,
     })
     if (error) {
-      alert(`Upload fallito: ${error.message}`)
+      toast.error(`Upload fallito: ${error.message}`)
       setItemDraft((d) => ({ ...d, uploading: false }))
       return
     }
     const { data } = supabase.storage.from("images").getPublicUrl(path)
     setItemDraft((d) => ({ ...d, image_url: data.publicUrl, uploading: false }))
+    toast.success("Immagine caricata")
   }
 
   function extractStoragePath(publicUrl?: string | null): string | null {
@@ -259,18 +290,20 @@ export default function CategoriesPage() {
   async function uploadImage(file: File) {
     if (!selectedItemId) return
     const supabase = getSupabaseBrowser()
-    const path = `products/${selectedItemId}/${Date.now()}-${file.name}`
+    const safeName = sanitizeFileName(file.name)
+    const path = `products/${selectedItemId}/${Date.now()}-${safeName}`
     const { error } = await supabase.storage.from("images").upload(path, file, {
       cacheControl: "3600",
       upsert: true,
       contentType: file.type,
     })
     if (error) {
-      alert(`Upload fallito: ${error.message}`)
+      toast.error(`Upload fallito: ${error.message}`)
       return
     }
     const { data } = supabase.storage.from("images").getPublicUrl(path)
     setDraft((d) => ({ ...d, image_url: data.publicUrl }))
+    toast.success("Immagine aggiornata")
   }
 
   async function removeImageFromStorage() {
@@ -282,6 +315,7 @@ export default function CategoriesPage() {
     }
     await supabase.storage.from("images").remove([path])
     setDraft((d) => ({ ...d, image_url: "" }))
+    toast.success("Immagine rimossa")
   }
 
   return (
