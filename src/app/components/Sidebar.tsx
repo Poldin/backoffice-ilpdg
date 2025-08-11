@@ -3,18 +3,25 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen, ExternalLink } from "lucide-react"
 
 type NavItem = {
   href: string
   label: string
   icon: React.ReactNode
   position?: "top" | "bottom"
+  external?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/cover", label: "Cover", icon: <Image className="h-5 w-5" /> },
   { href: "/categories", label: "Categories", icon: <FolderTree className="h-5 w-5" /> },
+  {
+    href: "https://analytics.google.com/analytics/web/?hl=it#/p498367036/reports/intelligenthome",
+    label: "Google Analytics",
+    icon: <ExternalLink className="h-5 w-5" />,
+    external: true,
+  },
   { href: "/profile", label: "Profilo", icon: <User className="h-5 w-5" />, position: "bottom" },
   { href: "/logout", label: "Logout", icon: <LogOut className="h-5 w-5" />, position: "bottom" },
 ]
@@ -85,6 +92,8 @@ export default function Sidebar() {
                       : "hover:bg-black/5 dark:hover:bg-white/10")
                   }
                   title={isCollapsed ? item.label : undefined}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener noreferrer" : undefined}
                 >
                   <span className="text-current">{item.icon}</span>
                   {!isCollapsed && <span className="truncate">{item.label}</span>}
@@ -110,6 +119,8 @@ export default function Sidebar() {
                       : "hover:bg-black/5 dark:hover:bg-white/10")
                   }
                   title={isCollapsed ? item.label : undefined}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener noreferrer" : undefined}
                 >
                   <span className="text-current">{item.icon}</span>
                   {!isCollapsed && <span className="truncate">{item.label}</span>}
