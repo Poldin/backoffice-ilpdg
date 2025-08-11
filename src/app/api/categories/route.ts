@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/app/lib/supabase/server"
 
 export async function GET() {
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const [cats, items] = await Promise.all([
     supabase.from("products_categories").select("*").order("created_at", { ascending: false }),
     supabase
@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   if (body?.type === "item") {
     const { data, error } = await supabase
       .from("products_categories_items")
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   if (!body?.id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   if (body?.type === "item") {
     const { data, error } = await supabase
       .from("products_categories_items")
@@ -77,7 +77,7 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id")
   const type = searchParams.get("type")
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   if (type === "item") {
     const { error } = await supabase.from("products_categories_items").delete().eq("id", id)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })

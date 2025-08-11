@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/app/lib/supabase/server"
 
 export async function GET() {
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data, error } = await supabase
     .from("products_cover_items")
     .select("*")
@@ -13,7 +13,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data, error } = await supabase
     .from("products_cover_items")
     .insert({
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   if (!body?.id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data, error } = await supabase
     .from("products_cover_items")
     .update({
@@ -49,7 +49,7 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { error } = await supabase.from("products_cover_items").delete().eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ ok: true })

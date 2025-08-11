@@ -21,6 +21,20 @@ function LoginInner() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (error) return setError(error.message)
+
+    // Sync session cookies server-side so middleware can read them
+    try {
+      const access_token = data.session?.access_token
+      const refresh_token = data.session?.refresh_token
+      if (access_token && refresh_token) {
+        await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token, refresh_token })
+        })
+      }
+    } catch {}
+
     router.replace("/profile")
   }
 
