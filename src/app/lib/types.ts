@@ -12,4 +12,6 @@ export type CategoryItem = Database["public"]["Tables"]["products_categories_ite
 export type CategoryItemInsert = Database["public"]["Tables"]["products_categories_items"]["Insert"]
 export type CategoryItemUpdate = Database["public"]["Tables"]["products_categories_items"]["Update"]
 
+export type Profile = Database["public"]["Tables"]["profile"]["Row"]
+
 

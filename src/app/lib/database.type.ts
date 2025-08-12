@@ -45,20 +45,34 @@ export type Database = {
           id: string
           is_public: boolean | null
           name: string | null
+           expert_id: string | null
+           category_description: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           is_public?: boolean | null
           name?: string | null
+           expert_id?: string | null
+           category_description?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           is_public?: boolean | null
           name?: string | null
+           expert_id?: string | null
+           category_description?: string | null
         }
-        Relationships: []
+         Relationships: [
+           {
+             foreignKeyName: "products_categories_expert_id_fkey"
+             columns: ["expert_id"]
+             isOneToOne: false
+             referencedRelation: "profile"
+             referencedColumns: ["id"]
+           },
+         ]
       }
       products_categories_items: {
         Row: {
@@ -143,6 +157,9 @@ export type Database = {
           id: string
           role: Database["public"]["Enums"]["user_role"] | null
           user_id: string | null
+           img_url: string | null
+           nome: string | null
+           bio: string | null
         }
         Insert: {
           created_at?: string
@@ -150,6 +167,9 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           user_id?: string | null
+           img_url?: string | null
+           nome?: string | null
+           bio?: string | null
         }
         Update: {
           created_at?: string
@@ -157,8 +177,11 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           user_id?: string | null
+           img_url?: string | null
+           nome?: string | null
+           bio?: string | null
         }
-        Relationships: []
+         Relationships: []
       }
     }
     Views: {

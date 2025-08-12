@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Eye, EyeOff, Trash2, Save, X, Upload, Plus } from "lucide-react"
+import Link from "next/link"
+import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil } from "lucide-react"
 import { toast } from "sonner"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 
@@ -10,6 +11,9 @@ type Category = {
   created_at: string
   name: string | null
   is_public: boolean | null
+  expert_id?: string | null
+  category_description?: string | null
+  expert?: { id: string; nome: string | null; img_url: string | null } | null
 }
 type CategoryItem = {
   id: string
@@ -29,9 +33,11 @@ export default function CategoriesPage() {
   const selectedItem = items.find((i) => i.id === selectedItemId) || null
   const [draft, setDraft] = useState<Partial<CategoryItem>>({})
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
-  const [categoryDraft, setCategoryDraft] = useState<{ name: string; is_public: boolean }>({
+  const [categoryDraft, setCategoryDraft] = useState<{ name: string; is_public: boolean; expert_id: string; category_description: string }>({
     name: "",
     is_public: true,
+    expert_id: "",
+    category_description: "",
   })
   const [isAddItemOpen, setIsAddItemOpen] = useState(false)
   const [itemDraft, setItemDraft] = useState<{
@@ -43,6 +49,8 @@ export default function CategoriesPage() {
     uploading: boolean
   }>({ category_id: "", name: "", description: "", image_url: "", is_public: true, uploading: false })
   const [detailsWidth, setDetailsWidth] = useState<number>(560)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [isEditCategorySidebarOpen, setIsEditCategorySidebarOpen] = useState(false)
   const isResizingRef = useRef(false)
   const startXRef = useRef(0)
   const startWidthRef = useRef(560)
@@ -115,11 +123,28 @@ export default function CategoriesPage() {
     const res = await fetch("/api/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: payload.name, is_public: payload.is_public }),
+      body: JSON.stringify({ name: payload.name, is_public: payload.is_public, expert_id: categoryDraft.expert_id || null, category_description: categoryDraft.category_description || null }),
     })
     const created = await res.json()
     setCategories((prev) => [created, ...prev])
     toast.success("Categoria creata")
+  }
+
+  async function updateCategory(id: string, payload: { name: string; is_public: boolean; expert_id: string; category_description: string }) {
+    const res = await fetch("/api/categories", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        name: payload.name,
+        is_public: payload.is_public,
+        expert_id: payload.expert_id || null,
+        category_description: payload.category_description || null,
+      }),
+    })
+    const updated = await res.json()
+    setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)))
+    toast.success("Categoria aggiornata")
   }
 
   function sanitizeFileName(name: string): string {
@@ -158,6 +183,7 @@ export default function CategoriesPage() {
     await fetch(`/api/categories?id=${id}`, { method: "DELETE" })
     setCategories((prev) => prev.filter((c) => c.id !== id))
     setItems((prev) => prev.filter((i) => i.category_id !== id))
+    if (editingCategoryId === id) setEditingCategoryId(null)
     toast.success("Categoria eliminata")
   }
 
@@ -227,7 +253,8 @@ export default function CategoriesPage() {
   }
 
   function openAddCategory() {
-    setCategoryDraft({ name: "", is_public: true })
+    setEditingCategoryId(null)
+    setCategoryDraft({ name: "", is_public: true, expert_id: "", category_description: "" })
     setIsAddCategoryOpen(true)
     toast.message("Compila i campi e salva")
   }
@@ -236,8 +263,147 @@ export default function CategoriesPage() {
   }
   async function saveAddCategory() {
     if (!categoryDraft.name) return
-    await createCategory({ name: categoryDraft.name, is_public: categoryDraft.is_public })
+    if (editingCategoryId) {
+      await updateCategory(editingCategoryId, categoryDraft)
+    } else {
+      await createCategory({ name: categoryDraft.name, is_public: categoryDraft.is_public })
+    }
     setIsAddCategoryOpen(false)
+    setEditingCategoryId(null)
+  }
+
+  type Expert = { id: string; nome: string | null; img_url: string | null }
+
+  function ExpertPicker({ selectedExpertId, onPick }: { selectedExpertId?: string | null; onPick: (e: Expert | null) => void }) {
+    const [open, setOpen] = useState(false)
+    useEffect(() => {
+      function handler() {
+        setOpen(true)
+      }
+      document.addEventListener('open-expert-picker', handler)
+      return () => document.removeEventListener('open-expert-picker', handler)
+    }, [])
+    const [query, setQuery] = useState("")
+    const [results, setResults] = useState<Expert[]>([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+      if (!open) return
+      let active = true
+      setLoading(true)
+      const controller = new AbortController()
+      const timeout = setTimeout(async () => {
+        try {
+          const url = query.trim() ? `/api/experts-search?q=${encodeURIComponent(query.trim())}` : `/api/experts-search`
+          const res = await fetch(url, { signal: controller.signal })
+          const data = await res.json()
+          if (!active) return
+          setResults(Array.isArray(data) ? data : [])
+        } catch {
+          if (!active) return
+          setResults([])
+        } finally {
+          if (active) setLoading(false)
+        }
+      }, 250)
+
+      return () => {
+        active = false
+        controller.abort()
+        clearTimeout(timeout)
+      }
+    }, [query, open])
+
+    return (
+      <div className="block text-sm">
+        
+        
+
+        {open && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={() => setOpen(false)} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
+                <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+                  <h3 className="font-semibold">Seleziona esperto</h3>
+                  <button className="rounded-md border p-2" title="Chiudi" onClick={() => setOpen(false)}><X className="h-4 w-4" /></button>
+                </div>
+                <div className="p-4 space-y-3">
+                  <input
+                    autoFocus
+                    placeholder="Cerca per nome…"
+                    className="w-full rounded-md border px-3 py-2 bg-transparent"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  <div className="max-h-80 overflow-auto border rounded-md divide-y divide-black/10 dark:divide-white/10">
+                    {loading ? (
+                      <div className="p-3 text-sm text-black/60 dark:text-white/60">Caricamento…</div>
+                    ) : results.length === 0 ? (
+                      <div className="p-3 text-sm text-black/60 dark:text-white/60">Nessun risultato</div>
+                    ) : (
+                      <div>
+                        {results.map((r) => (
+                          <button
+                            key={r.id}
+                            className="w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2"
+                            onClick={() => {
+                              onPick(r)
+                              setOpen(false)
+                            }}
+                          >
+                            {r.img_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={r.img_url} alt={r.nome || "Expert"} className="h-6 w-6 rounded-full object-cover" />
+                            ) : (
+                              <div className="h-6 w-6 rounded-full bg-black/10 dark:bg-white/10" />
+                            )}
+                            <span>{r.nome || "(senza nome)"}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  function SelectedExpertPreview({ expertId }: { expertId: string }) {
+    const [expert, setExpert] = useState<Expert | null>(null)
+    useEffect(() => {
+      let active = true
+      ;(async () => {
+        try {
+          const res = await fetch(`/api/experts-search?id=${encodeURIComponent(expertId)}`)
+          const data = await res.json()
+          if (!active) return
+          setExpert(Array.isArray(data) && data.length > 0 ? data[0] : null)
+        } catch {
+          if (!active) return
+          setExpert(null)
+        }
+      })()
+      return () => {
+        active = false
+      }
+    }, [expertId])
+    if (!expert) return null
+    return (
+      <div className="mt-2 flex items-center gap-2 text-sm">
+        {expert.img_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={expert.img_url} alt={expert.nome || "Expert"} className="h-6 w-6 rounded-full object-cover" />
+        ) : (
+          <div className="h-6 w-6 rounded-full bg-black/10 dark:bg-white/10" />
+        )}
+        <span>{expert.nome || "(senza nome)"}</span>
+      </div>
+    )
   }
 
   function openAddItem(categoryId: string) {
@@ -343,11 +509,39 @@ export default function CategoriesPage() {
                     <summary className="cursor-pointer select-none p-3 flex items-center justify-between">
                       <div className="truncate">
                         <span className="font-medium">{c.name}</span>
+                        {c.category_description && (
+                          <span className="block text-xs text-black/60 dark:text-white/60 truncate">{c.category_description}</span>
+                        )}
                         <span className="ml-2 text-xs px-2 py-0.5 rounded-full border">
                           {related.length} prodotti
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Link
+                          href={`/categories/${c.id}/table`}
+                          className="p-2 rounded-md border"
+                          title="Editor tabellare"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="text-sm">Tabella</span>
+                        </Link>
+                        <button
+                          className="p-2 rounded-md border"
+                          title="Modifica categoria"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setEditingCategoryId(c.id)
+                            setCategoryDraft({
+                              name: c.name || "",
+                              is_public: !!c.is_public,
+                              expert_id: c.expert_id || "",
+                              category_description: c.category_description || "",
+                            })
+                            setIsEditCategorySidebarOpen(true)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           className="p-2 rounded-md border"
                           title="Nuovo prodotto"
@@ -516,7 +710,7 @@ export default function CategoriesPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
               <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-semibold">Nuova categoria</h3>
+                <h3 className="font-semibold">{editingCategoryId ? "Modifica categoria" : "Nuova categoria"}</h3>
                 <button className="rounded-md border p-2" title="Chiudi" onClick={closeAddCategory}><X className="h-4 w-4" /></button>
               </div>
               <div className="p-4 space-y-3">
@@ -524,6 +718,14 @@ export default function CategoriesPage() {
                   <div className="mb-1">Nome</div>
                   <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={categoryDraft.name} onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} />
                 </label>
+                <label className="block text-sm">
+                  <div className="mb-1">Descrizione</div>
+                  <textarea className="w-full rounded-md border px-3 py-2 bg-transparent" rows={3} value={categoryDraft.category_description} onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} />
+                </label>
+                <ExpertPicker
+                  selectedExpertId={categoryDraft.expert_id}
+                  onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
+                />
                 <label className="inline-flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={!!categoryDraft.is_public} onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))} />
                   <span>Pubblica</span>
@@ -537,6 +739,90 @@ export default function CategoriesPage() {
               </div>
             </div>
           </div>
+        </>
+      )}
+
+      {isEditCategorySidebarOpen && editingCategoryId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={() => setIsEditCategorySidebarOpen(false)} />
+          <aside
+            className="fixed top-0 right-0 h-screen bg-white dark:bg-black border-l border-black/10 dark:border-white/10 z-50 flex flex-col"
+            style={{ width: detailsWidth }}
+          >
+            <div
+              className="absolute left-0 top-0 h-full w-1 cursor-col-resize bg-transparent"
+              onMouseDown={(e) => {
+                isResizingRef.current = true
+                startXRef.current = e.clientX
+                startWidthRef.current = detailsWidth
+                document.body.style.cursor = "col-resize"
+              }}
+            />
+            <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+              <h3 className="font-semibold">Modifica categoria</h3>
+              <button className="rounded-md border p-2" title="Chiudi" onClick={() => setIsEditCategorySidebarOpen(false)}><X className="h-4 w-4" /></button>
+            </div>
+            <div className="p-4 space-y-3 overflow-auto">
+              <label className="block text-sm">
+                <div className="mb-1">Nome</div>
+                <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={categoryDraft.name} onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} />
+              </label>
+              <label className="block text-sm">
+                <div className="mb-1">Descrizione</div>
+                <textarea className="w-full rounded-md border px-3 py-2 bg-transparent" rows={3} value={categoryDraft.category_description} onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} />
+              </label>
+              <div className="block text-sm">
+                <div className="mb-1">Esperto associato</div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border px-3 py-2"
+                    onClick={() => document.dispatchEvent(new Event('open-expert-picker'))}
+                  >
+                    {categoryDraft.expert_id ? "Cambia esperto" : "Seleziona esperto…"}
+                  </button>
+                  {categoryDraft.expert_id && (
+                    <button
+                      type="button"
+                      className="rounded-md border px-2 py-2"
+                      title="Rimuovi selezione"
+                      onClick={() => setCategoryDraft((d) => ({ ...d, expert_id: "" }))}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {categoryDraft.expert_id && (
+                  <SelectedExpertPreview expertId={categoryDraft.expert_id} />
+                )}
+                <ExpertPicker
+                  selectedExpertId={categoryDraft.expert_id}
+                  onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
+                />
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!categoryDraft.is_public} onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))} />
+                <span>Pubblica</span>
+              </label>
+            </div>
+            <div className="p-4 mt-auto border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
+              <button className="rounded-md border p-2" title="Chiudi" onClick={() => setIsEditCategorySidebarOpen(false)}><X className="h-4 w-4" /></button>
+              <button
+                className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50"
+                title="Salva"
+                onClick={async () => {
+                  if (!editingCategoryId) return
+                  await updateCategory(editingCategoryId, categoryDraft)
+                  setIsEditCategorySidebarOpen(false)
+                  setEditingCategoryId(null)
+                }}
+                disabled={!categoryDraft.name}
+              >
+                <Save className="h-4 w-4" />
+              </button>
+            </div>
+          </aside>
+          {/* Expert picker modal embedded in ExpertPicker component; nothing to render here */}
         </>
       )}
 
