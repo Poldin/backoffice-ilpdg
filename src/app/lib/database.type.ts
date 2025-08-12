@@ -105,6 +105,8 @@ export type Database = {
           image_url: string | null
           is_public: boolean | null
           name: string | null
+          product_id: string | null
+          order: number | null
         }
         Insert: {
           created_at?: string
@@ -112,6 +114,8 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean | null
           name?: string | null
+          product_id?: string | null
+          order?: number | null
         }
         Update: {
           created_at?: string
@@ -119,8 +123,18 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean | null
           name?: string | null
+          product_id?: string | null
+          order?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_cover_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_categories_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile: {
         Row: {

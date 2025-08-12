@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Eye, EyeOff, Trash2, Upload, Plus, Save, X } from "lucide-react"
+import { Eye, EyeOff, Trash2, Upload, Plus, Save, X, ArrowUp, ArrowDown } from "lucide-react"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 import { toast } from "sonner"
 
@@ -11,34 +11,67 @@ type Cover = {
   name: string | null
   image_url: string | null
   is_public: boolean | null
+  product_id: string | null
+  order: number | null
+}
+
+type Product = {
+  id: string
+  name: string | null
+}
+
+function formatProductLabel(p: Product): string {
+  const base = p.name && p.name.trim().length > 0 ? p.name : "(senza nome)"
+  const shortId = p.id.slice(0, 6)
+  return `${base} — ${shortId}`
 }
 
 export default function CoverPage() {
   const [items, setItems] = useState<Cover[]>([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<Partial<Cover>>({ name: "", image_url: "", is_public: true })
+  const [products, setProducts] = useState<Product[]>([])
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [draft, setDraft] = useState<{ name: string; image_url: string; uploading: boolean }>(
-    { name: "", image_url: "", uploading: false }
+  const [draft, setDraft] = useState<{ name: string; image_url: string; product_id: string; uploading: boolean }>(
+    { name: "", image_url: "", product_id: "", uploading: false }
   )
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false)
+  const [productQuery, setProductQuery] = useState("")
+
+  const productOptions = useMemo(() => products.map((p) => ({ value: p.id, label: formatProductLabel(p) })), [products])
+
+  const productIdToName = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const p of products) map[p.id] = p.name ?? "(senza nome)"
+    return map
+  }, [products])
 
   useEffect(() => {
     ;(async () => {
-      const res = await fetch("/api/cover")
-      const data = await res.json()
-      setItems(data)
+      const coverRes = await fetch("/api/cover")
+      const coverData = await coverRes.json()
+      setItems(coverData)
+
+      // initial load: first 20 newest
+      try {
+        const res = await fetch(`/api/products-search`)
+        const data = await res.json()
+        setProducts(Array.isArray(data) ? data : [])
+      } catch {
+        setProducts([])
+      }
       setLoading(false)
     })()
   }, [])
 
-  async function create(payload: { name: string; image_url: string }) {
+  async function create(payload: { name: string; image_url: string; product_id: string }) {
     const res = await fetch("/api/cover", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: payload.name, image_url: payload.image_url, is_public: true }),
+      body: JSON.stringify({ name: payload.name, image_url: payload.image_url, is_public: true, product_id: payload.product_id }),
     })
     const data = await res.json()
-    setItems((prev) => [data, ...prev])
+    setItems((prev) => [...prev, data])
     toast.success("Cover creata")
   }
 
@@ -81,15 +114,15 @@ export default function CoverPage() {
   }
 
   function openAdd() {
-    setDraft({ name: "", image_url: "", uploading: false })
+    setDraft({ name: "", image_url: "", product_id: "", uploading: false })
     setIsAddOpen(true)
   }
   function closeAdd() {
     setIsAddOpen(false)
   }
   async function saveAdd() {
-    if (!draft.name || !draft.image_url) return
-    await create({ name: draft.name, image_url: draft.image_url })
+    if (!draft.name || !draft.image_url || !draft.product_id) return
+    await create({ name: draft.name, image_url: draft.image_url, product_id: draft.product_id })
     setIsAddOpen(false)
     toast.success("Cover salvata")
   }
@@ -103,6 +136,42 @@ export default function CoverPage() {
     const updated = await res.json()
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)))
     toast.success("Cover aggiornata")
+  }
+
+  async function persistNewOrder(nextItems: Cover[]) {
+    await Promise.all(
+      nextItems.map((it, idx) =>
+        fetch("/api/cover", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: it.id, order: idx + 1 }),
+        })
+      )
+    )
+  }
+
+  function moveUp(id: string) {
+    setItems((prev) => {
+      const idx = prev.findIndex((i) => i.id === id)
+      if (idx <= 0) return prev
+      const next = [...prev]
+      ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+      const withOrder = next.map((it, i) => ({ ...it, order: i + 1 }))
+      persistNewOrder(withOrder)
+      return withOrder
+    })
+  }
+
+  function moveDown(id: string) {
+    setItems((prev) => {
+      const idx = prev.findIndex((i) => i.id === id)
+      if (idx === -1 || idx >= prev.length - 1) return prev
+      const next = [...prev]
+      ;[next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]
+      const withOrder = next.map((it, i) => ({ ...it, order: i + 1 }))
+      persistNewOrder(withOrder)
+      return withOrder
+    })
   }
 
   async function remove(id: string) {
@@ -146,9 +215,20 @@ export default function CoverPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium truncate">{item.name}</div>
+                    {item.product_id && (
+                      <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                        Prodotto: {productIdToName[item.product_id] || "(sconosciuto)"}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button className="p-2 rounded-md border" title="Su" onClick={() => moveUp(item.id)}>
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                  <button className="p-2 rounded-md border" title="Giù" onClick={() => moveDown(item.id)}>
+                    <ArrowDown className="h-4 w-4" />
+                  </button>
                   <button
                     className="p-2 rounded-md border"
                     title={item.is_public ? "Nascondi" : "Pubblica"}
@@ -199,9 +279,36 @@ export default function CoverPage() {
                   </label>
                 </div>
                 <label className="block text-sm">
-                  <div className="mb-1">Nome</div>
+                  <div className="mb-1 text-gray-700 dark:text-gray-300">Nome</div>
                   <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
                 </label>
+                <div className="block text-sm">
+                  <div className="mb-1 text-gray-700 dark:text-gray-300">Prodotto collegato</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="rounded-md border px-3 py-2"
+                      onClick={() => setIsProductPickerOpen(true)}
+                    >
+                      {draft.product_id
+                        ? (productIdToName[draft.product_id] || "Cambia prodotto")
+                        : "Seleziona un prodotto…"}
+                    </button>
+                    {draft.product_id && (
+                      <button
+                        type="button"
+                        className="rounded-md border px-2 py-2"
+                        title="Rimuovi selezione"
+                        onClick={() => setDraft((d) => ({ ...d, product_id: "" }))}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {productOptions.length === 0 && (
+                    <div className="mt-1 text-xs text-black/60 dark:text-white/60">Nessun prodotto disponibile. Crea prima un prodotto in Categorie.</div>
+                  )}
+                </div>
               </div>
               <div className="p-4 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
                 <button className="rounded-md border p-2" title="Chiudi" onClick={closeAdd}><X className="h-4 w-4" /></button>
@@ -209,10 +316,48 @@ export default function CoverPage() {
                   className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50"
                   title="Salva"
                   onClick={saveAdd}
-                  disabled={!draft.name || !draft.image_url || draft.uploading}
+                  disabled={!draft.name || !draft.image_url || !draft.product_id || draft.uploading}
                 >
                   <Save className="h-4 w-4" />
                 </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {isProductPickerOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-40"
+            role="button"
+            tabIndex={-1}
+            onClick={() => setIsProductPickerOpen(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
+              <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+                <h3 className="font-semibold">Seleziona prodotto</h3>
+                <button className="rounded-md border p-2" title="Chiudi" onClick={() => setIsProductPickerOpen(false)}><X className="h-4 w-4" /></button>
+              </div>
+              <div className="p-4 space-y-3">
+                <input
+                  autoFocus
+                  placeholder="Cerca per nome…"
+                  className="w-full rounded-md border px-3 py-2 bg-transparent"
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                />
+                <div className="max-h-80 overflow-auto border rounded-md divide-y divide-black/10 dark:divide-white/10">
+                  {/* Results will be filled below */}
+                  <ProductSearchResults
+                    query={productQuery}
+                    onPick={(p) => {
+                      setDraft((d) => ({ ...d, product_id: p.id }))
+                      setIsProductPickerOpen(false)
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -237,6 +382,57 @@ function sanitizeFileName(name: string): string {
   const ext = match ? match[2] : ""
   const trimmedBase = base.slice(-100)
   return `${trimmedBase}${ext}`
+}
+
+function ProductSearchResults({ query, onPick }: { query: string; onPick: (p: Product) => void }) {
+  const [loading, setLoading] = useState(false)
+  const [results, setResults] = useState<Product[]>([])
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(async () => {
+      try {
+        const url = query.trim() ? `/api/products-search?q=${encodeURIComponent(query.trim())}` : `/api/products-search`
+        const res = await fetch(url, { signal: controller.signal })
+        const data = await res.json()
+        if (!active) return
+        setResults(Array.isArray(data) ? data : [])
+      } catch {
+        if (!active) return
+        setResults([])
+      } finally {
+        if (active) setLoading(false)
+      }
+    }, 250)
+
+    return () => {
+      active = false
+      controller.abort()
+      clearTimeout(timeout)
+    }
+  }, [query])
+
+  if (loading) {
+    return <div className="p-3 text-sm text-black/60 dark:text-white/60">Caricamento…</div>
+  }
+  if (results.length === 0) {
+    return <div className="p-3 text-sm text-black/60 dark:text-white/60">Nessun risultato</div>
+  }
+  return (
+    <div>
+      {results.map((r) => (
+        <button
+          key={r.id}
+          className="w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+          onClick={() => onPick(r)}
+        >
+          {formatProductLabel(r)}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 
