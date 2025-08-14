@@ -321,32 +321,34 @@ export default function CategoriesPage() {
 
         {open && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={() => setOpen(false)} />
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={() => setOpen(false)} />
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
-                <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                  <h3 className="font-semibold">Seleziona esperto</h3>
-                  <button className="rounded-md border p-2" title="Chiudi" onClick={() => setOpen(false)}><X className="h-4 w-4" /></button>
+              <div className="w-full max-w-2xl rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">Seleziona esperto</h3>
+                  <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={() => setOpen(false)}>
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <div className="p-4 space-y-3">
+                <div className="px-6 py-4 space-y-4">
                   <input
                     autoFocus
                     placeholder="Cerca per nome…"
-                    className="w-full rounded-md border px-3 py-2 bg-transparent"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                   />
-                  <div className="max-h-80 overflow-auto border rounded-md divide-y divide-black/10 dark:divide-white/10">
+                  <div className="max-h-80 overflow-auto border border-gray-200 rounded-lg divide-y divide-gray-200">
                     {loading ? (
-                      <div className="p-3 text-sm text-black/60 dark:text-white/60">Caricamento…</div>
+                      <div className="p-4 text-sm text-gray-700">Caricamento…</div>
                     ) : results.length === 0 ? (
-                      <div className="p-3 text-sm text-black/60 dark:text-white/60">Nessun risultato</div>
+                      <div className="p-4 text-sm text-gray-700">Nessun risultato</div>
                     ) : (
                       <div>
                         {results.map((r) => (
                           <button
                             key={r.id}
-                            className="w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2"
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 transition-colors duration-200"
                             onClick={() => {
                               onPick(r)
                               setOpen(false)
@@ -354,11 +356,11 @@ export default function CategoriesPage() {
                           >
                             {r.img_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={r.img_url} alt={r.nome || "Expert"} className="h-6 w-6 rounded-full object-cover" />
+                              <img src={r.img_url} alt={r.nome || "Expert"} className="h-8 w-8 rounded-full object-cover" />
                             ) : (
-                              <div className="h-6 w-6 rounded-full bg-black/10 dark:bg-white/10" />
+                              <div className="h-8 w-8 rounded-full bg-gray-200" />
                             )}
-                            <span>{r.nome || "(senza nome)"}</span>
+                            <span className="text-sm font-medium text-gray-900">{r.nome || "(senza nome)"}</span>
                           </button>
                         ))}
                       </div>
@@ -394,14 +396,14 @@ export default function CategoriesPage() {
     }, [expertId])
     if (!expert) return null
     return (
-      <div className="mt-2 flex items-center gap-2 text-sm">
+      <div className="mt-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
         {expert.img_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={expert.img_url} alt={expert.nome || "Expert"} className="h-6 w-6 rounded-full object-cover" />
+          <img src={expert.img_url} alt={expert.nome || "Expert"} className="h-8 w-8 rounded-full object-cover" />
         ) : (
-          <div className="h-6 w-6 rounded-full bg-black/10 dark:bg-white/10" />
+          <div className="h-8 w-8 rounded-full bg-gray-200" />
         )}
-        <span>{expert.nome || "(senza nome)"}</span>
+        <span className="text-sm font-medium text-gray-900">{expert.nome || "(senza nome)"}</span>
       </div>
     )
   }
@@ -485,48 +487,62 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-xl font-semibold mb-4">Categorie</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-gray-900 mb-2">Categorie</h1>
+          <p className="text-gray-600">Gestisci le categorie e i prodotti del tuo catalogo</p>
+        </div>
 
-      <div className="mb-6 flex items-center justify-between">
-        <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2" onClick={openAddCategory}>
-          <Plus className="h-4 w-4" />
-          <span>Nuova categoria</span>
-        </button>
-      </div>
+        <div className="mb-8">
+          <button 
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors duration-200 shadow-sm" 
+            onClick={openAddCategory}
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nuova categoria</span>
+          </button>
+        </div>
 
-      {loading ? (
-        <div>Caricamento…</div>
-      ) : (
-        <div>
-
-          <ul className="space-y-3">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-700">Caricamento…</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
             {categories.map((c) => {
               const related = items.filter((i) => i.category_id === c.id)
               return (
-                <li key={c.id} className="border rounded-md">
-                  <details>
-                    <summary className="cursor-pointer select-none p-3 flex items-center justify-between">
-                      <div className="truncate">
-                        <span className="font-medium">{c.name}</span>
+                <div key={c.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <details className="group">
+                    <summary className="cursor-pointer select-none p-6 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-medium text-gray-900 truncate">{c.name}</h3>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {related.length} prodotti
+                          </span>
+                          {c.is_public && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Pubblica
+                            </span>
+                          )}
+                        </div>
                         {c.category_description && (
-                          <span className="block text-xs text-black/60 dark:text-white/60 truncate">{c.category_description}</span>
+                          <p className="text-sm text-gray-600 truncate">{c.category_description}</p>
                         )}
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full border">
-                          {related.length} prodotti
-                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 ml-4">
                         <Link
                           href={`/categories/${c.id}/table`}
-                          className="p-2 rounded-md border"
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
                           title="Editor tabellare"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-sm">Tabella</span>
+                          Tabella
                         </Link>
                         <button
-                          className="p-2 rounded-md border"
+                          className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200"
                           title="Modifica categoria"
                           onClick={(e) => {
                             e.preventDefault()
@@ -543,14 +559,14 @@ export default function CategoriesPage() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          className="p-2 rounded-md border"
+                          className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200"
                           title="Nuovo prodotto"
                           onClick={(e) => { e.preventDefault(); openAddItem(c.id) }}
                         >
                           <Plus className="h-4 w-4" />
                         </button>
                         <button
-                          className="p-2 rounded-md border"
+                          className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200"
                           title={c.is_public ? "Nascondi" : "Pubblica"}
                           onClick={(e) => {
                             e.preventDefault()
@@ -560,7 +576,7 @@ export default function CategoriesPage() {
                           {c.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                         <button
-                          className="p-2 rounded-md border"
+                          className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200"
                           title="Elimina"
                           onClick={(e) => {
                             e.preventDefault()
@@ -571,58 +587,85 @@ export default function CategoriesPage() {
                         </button>
                       </div>
                     </summary>
-                    <div className="p-3 pt-0">
+                    <div className="border-t border-gray-200 bg-gray-50 p-6">
                       {related.length === 0 ? (
-                        <div className="text-sm text-black/60 dark:text-white/60">Nessun prodotto</div>
+                        <div className="text-center py-8">
+                          <div className="text-gray-700 text-sm">Nessun prodotto in questa categoria</div>
+                          <button 
+                            className="mt-3 inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                            onClick={() => openAddItem(c.id)}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Aggiungi il primo prodotto
+                          </button>
+                        </div>
                       ) : (
-                        <ul className="space-y-2">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                           {related.map((i) => (
-                            <li key={i.id} className="border rounded-md p-3 flex items-center justify-between gap-3">
-                              <div className="flex items-start gap-3 min-w-0 flex-1">
-                                <div className="h-12 w-16 shrink-0 rounded bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center">
+                            <div key={i.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+                              <div className="flex items-start gap-3">
+                                <div className="h-16 w-16 flex-shrink-0 rounded-lg bg-gray-100 overflow-hidden">
                                   {i.image_url ? (
                                     <img src={i.image_url} alt={i.name ?? "Prodotto"} className="h-full w-full object-cover" />
                                   ) : (
-                                    <div className="text-[10px] text-black/50 dark:text-white/50">N/A</div>
+                                    <div className="h-full w-full flex items-center justify-center text-xs text-gray-700">N/A</div>
                                   )}
                                 </div>
-                                <div className="min-w-0">
-                                  <button className="font-medium underline underline-offset-4" onClick={() => openDetails(i)}>
+                                <div className="flex-1 min-w-0">
+                                  <button 
+                                    className="text-sm font-medium text-gray-900 hover:text-indigo-600 truncate block w-full text-left transition-colors duration-200" 
+                                    onClick={() => openDetails(i)}
+                                  >
                                     {i.name}
                                   </button>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    {i.is_public && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Pubblico
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <button className="p-2 rounded-md border" title={i.is_public ? "Nascondi" : "Pubblica"} onClick={() => toggleItemVisibility(i.id, i.is_public)}>
-                                  {i.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              <div className="flex items-center justify-end gap-1 mt-3">
+                                <button 
+                                  className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200" 
+                                  title={i.is_public ? "Nascondi" : "Pubblica"} 
+                                  onClick={() => toggleItemVisibility(i.id, i.is_public)}
+                                >
+                                  {i.is_public ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                                 </button>
-                                <button className="p-2 rounded-md border" title="Elimina" onClick={() => removeItem(i.id)}>
-                                  <Trash2 className="h-4 w-4" />
+                                <button 
+                                  className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
+                                  title="Elimina" 
+                                  onClick={() => removeItem(i.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
                               </div>
-                            </li>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       )}
                     </div>
                   </details>
-                </li>
+                </div>
               )
             })}
-          </ul>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {selectedItem && (
         <>
           <div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40"
             role="button"
             tabIndex={-1}
             onClick={closeDetails}
           />
           <aside
-            className="fixed top-0 right-0 h-screen bg-white dark:bg-black border-l border-black/10 dark:border-white/10 z-50 flex flex-col"
+            className="fixed top-0 right-0 h-screen bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl"
             style={{ width: detailsWidth }}
           >
             <div
@@ -634,70 +677,122 @@ export default function CategoriesPage() {
                 document.body.style.cursor = "col-resize"
               }}
             />
-            <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-              <h3 className="font-semibold">Dettagli prodotto</h3>
-              <button className="rounded-md border p-2" title="Chiudi" onClick={closeDetails}><X className="h-4 w-4" /></button>
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Dettagli prodotto</h3>
+              <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={closeDetails}>
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="p-4 space-y-3 overflow-auto">
-              <div className="flex items-center gap-3">
-                <div className="h-16 w-24 rounded bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center">
-                  {draft.image_url ? (
-                    <img src={draft.image_url} alt={String(draft.name || "Prodotto")} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="text-xs text-black/50 dark:text-white/50">N/A</div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-2 rounded-md border px-2 py-1 cursor-pointer" title="Carica">
-                    <Upload className="h-4 w-4" />
-                    <span className="text-sm">Carica</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) uploadImage(file)
-                      }}
-                    />
-                  </label>
-                  {draft.image_url && (
-                    <button className="rounded-md border px-2 py-1" title="Rimuovi immagine" onClick={removeImageFromStorage}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
+            <div className="px-6 py-6 space-y-6 overflow-auto">
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Immagine prodotto</h4>
+                <div className="flex items-start gap-4">
+                  <div className="h-20 w-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                    {draft.image_url ? (
+                      <img src={draft.image_url} alt={draft.name || "Prodotto"} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="text-xs text-gray-700">Nessuna immagine</div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                      <Upload className="h-4 w-4" />
+                      <span>Carica</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) uploadImage(file)
+                        }}
+                      />
+                    </label>
+                    {draft.image_url && (
+                      <button 
+                        className="inline-flex items-center p-2 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
+                        title="Rimuovi immagine" 
+                        onClick={removeImageFromStorage}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-              <label className="block text-sm">
-                <div className="mb-1">Nome</div>
-                <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={draft.name ?? ""} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-              </label>
-              <label className="block text-sm">
-                <div className="mb-1">Descrizione</div>
-                <textarea className="w-full rounded-md border px-3 py-2 bg-transparent" rows={4} value={draft.description ?? ""} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
-              </label>
-              <label className="block text-sm">
-                <div className="mb-1">URL immagine</div>
-                <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={draft.image_url ?? ""} onChange={(e) => setDraft((d) => ({ ...d, image_url: e.target.value }))} />
-              </label>
-              <label className="block text-sm">
-                <div className="mb-1">Categoria</div>
-                <select className="w-full rounded-md border px-3 py-2 bg-transparent" value={draft.category_id ?? ""} onChange={(e) => setDraft((d) => ({ ...d, category_id: e.target.value }))}>
-                  <option value="">—</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={!!draft.is_public} onChange={(e) => setDraft((d) => ({ ...d, is_public: e.target.checked }))} />
-                <span>Pubblico</span>
-              </label>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={draft.name ?? ""} 
+                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
+                    placeholder="Nome del prodotto"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+                  <textarea 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
+                    rows={4} 
+                    value={draft.description ?? ""} 
+                    onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} 
+                    placeholder="Descrizione del prodotto"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">URL immagine</label>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={draft.image_url ?? ""} 
+                    onChange={(e) => setDraft((d) => ({ ...d, image_url: e.target.value }))} 
+                    placeholder="https://..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                  <select 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={draft.category_id ?? ""} 
+                    onChange={(e) => setDraft((d) => ({ ...d, category_id: e.target.value }))}
+                  >
+                    <option value="">Seleziona categoria</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    checked={!!draft.is_public} 
+                    onChange={(e) => setDraft((d) => ({ ...d, is_public: e.target.checked }))}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">Prodotto pubblico</label>
+                </div>
+              </div>
             </div>
-            <div className="p-4 mt-auto border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
-              <button className="rounded-md border p-2" title="Chiudi" onClick={closeDetails}><X className="h-4 w-4" /></button>
-              <button className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50" title="Salva" onClick={saveDetails} disabled={!draft.name || !draft.id}>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <button 
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
+                onClick={closeDetails}
+              >
+                Annulla
+              </button>
+              <button 
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200" 
+                onClick={saveDetails} 
+                disabled={!draft.name || !draft.id}
+              >
                 <Save className="h-4 w-4" />
+                Salva modifiche
               </button>
             </div>
           </aside>
@@ -706,35 +801,63 @@ export default function CategoriesPage() {
 
       {isAddCategoryOpen && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={closeAddCategory} />
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={closeAddCategory} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
-              <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-semibold">{editingCategoryId ? "Modifica categoria" : "Nuova categoria"}</h3>
-                <button className="rounded-md border p-2" title="Chiudi" onClick={closeAddCategory}><X className="h-4 w-4" /></button>
+            <div className="w-full max-w-lg rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">{editingCategoryId ? "Modifica categoria" : "Nuova categoria"}</h3>
+                <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={closeAddCategory}>
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <div className="p-4 space-y-3">
-                <label className="block text-sm">
-                  <div className="mb-1">Nome</div>
-                  <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={categoryDraft.name} onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} />
-                </label>
-                <label className="block text-sm">
-                  <div className="mb-1">Descrizione</div>
-                  <textarea className="w-full rounded-md border px-3 py-2 bg-transparent" rows={3} value={categoryDraft.category_description} onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} />
-                </label>
+              <div className="px-6 py-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome categoria</label>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={categoryDraft.name} 
+                    onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} 
+                    placeholder="Nome della categoria"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+                  <textarea 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
+                    rows={3} 
+                    value={categoryDraft.category_description} 
+                    onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} 
+                    placeholder="Descrizione della categoria"
+                  />
+                </div>
                 <ExpertPicker
                   selectedExpertId={categoryDraft.expert_id}
                   onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
                 />
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={!!categoryDraft.is_public} onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))} />
-                  <span>Pubblica</span>
-                </label>
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    checked={!!categoryDraft.is_public} 
+                    onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">Categoria pubblica</label>
+                </div>
               </div>
-              <div className="p-4 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
-                <button className="rounded-md border p-2" title="Chiudi" onClick={closeAddCategory}><X className="h-4 w-4" /></button>
-                <button className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50" title="Salva" onClick={saveAddCategory} disabled={!categoryDraft.name}>
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <button 
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
+                  onClick={closeAddCategory}
+                >
+                  Annulla
+                </button>
+                <button 
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200" 
+                  onClick={saveAddCategory} 
+                  disabled={!categoryDraft.name}
+                >
                   <Save className="h-4 w-4" />
+                  {editingCategoryId ? "Salva modifiche" : "Crea categoria"}
                 </button>
               </div>
             </div>
@@ -744,9 +867,9 @@ export default function CategoriesPage() {
 
       {isEditCategorySidebarOpen && editingCategoryId && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={() => setIsEditCategorySidebarOpen(false)} />
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={() => setIsEditCategorySidebarOpen(false)} />
           <aside
-            className="fixed top-0 right-0 h-screen bg-white dark:bg-black border-l border-black/10 dark:border-white/10 z-50 flex flex-col"
+            className="fixed top-0 right-0 h-screen bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl"
             style={{ width: detailsWidth }}
           >
             <div
@@ -758,25 +881,38 @@ export default function CategoriesPage() {
                 document.body.style.cursor = "col-resize"
               }}
             />
-            <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-              <h3 className="font-semibold">Modifica categoria</h3>
-              <button className="rounded-md border p-2" title="Chiudi" onClick={() => setIsEditCategorySidebarOpen(false)}><X className="h-4 w-4" /></button>
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Modifica categoria</h3>
+              <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={() => setIsEditCategorySidebarOpen(false)}>
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="p-4 space-y-3 overflow-auto">
-              <label className="block text-sm">
-                <div className="mb-1">Nome</div>
-                <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={categoryDraft.name} onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} />
-              </label>
-              <label className="block text-sm">
-                <div className="mb-1">Descrizione</div>
-                <textarea className="w-full rounded-md border px-3 py-2 bg-transparent" rows={3} value={categoryDraft.category_description} onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} />
-              </label>
-              <div className="block text-sm">
-                <div className="mb-1">Esperto associato</div>
+            <div className="px-6 py-6 space-y-6 overflow-auto">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nome categoria</label>
+                                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={categoryDraft.name} 
+                    onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} 
+                    placeholder="Nome della categoria"
+                  />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+                <textarea 
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
+                  rows={3} 
+                  value={categoryDraft.category_description} 
+                  onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} 
+                  placeholder="Descrizione della categoria"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Esperto associato</label>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="rounded-md border px-3 py-2"
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
                     onClick={() => document.dispatchEvent(new Event('open-expert-picker'))}
                   >
                     {categoryDraft.expert_id ? "Cambia esperto" : "Seleziona esperto…"}
@@ -784,7 +920,7 @@ export default function CategoriesPage() {
                   {categoryDraft.expert_id && (
                     <button
                       type="button"
-                      className="rounded-md border px-2 py-2"
+                      className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200"
                       title="Rimuovi selezione"
                       onClick={() => setCategoryDraft((d) => ({ ...d, expert_id: "" }))}
                     >
@@ -800,16 +936,25 @@ export default function CategoriesPage() {
                   onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
                 />
               </div>
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={!!categoryDraft.is_public} onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))} />
-                <span>Pubblica</span>
-              </label>
+              <div className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  checked={!!categoryDraft.is_public} 
+                  onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label className="ml-2 text-sm text-gray-700">Categoria pubblica</label>
+              </div>
             </div>
-            <div className="p-4 mt-auto border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
-              <button className="rounded-md border p-2" title="Chiudi" onClick={() => setIsEditCategorySidebarOpen(false)}><X className="h-4 w-4" /></button>
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <button 
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
+                onClick={() => setIsEditCategorySidebarOpen(false)}
+              >
+                Annulla
+              </button>
               <button
-                className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50"
-                title="Salva"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200"
                 onClick={async () => {
                   if (!editingCategoryId) return
                   await updateCategory(editingCategoryId, categoryDraft)
@@ -819,6 +964,7 @@ export default function CategoriesPage() {
                 disabled={!categoryDraft.name}
               >
                 <Save className="h-4 w-4" />
+                Salva modifiche
               </button>
             </div>
           </aside>
@@ -828,53 +974,84 @@ export default function CategoriesPage() {
 
       {isAddItemOpen && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={closeAddItem} />
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={closeAddItem} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
-              <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-semibold">Nuovo prodotto</h3>
-                <button className="rounded-md border p-2" title="Chiudi" onClick={closeAddItem}><X className="h-4 w-4" /></button>
+            <div className="w-full max-w-lg rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Nuovo prodotto</h3>
+                <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={closeAddItem}>
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-20 w-32 rounded bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center">
-                    {itemDraft.image_url ? (
-                      <img src={itemDraft.image_url} alt={itemDraft.name || "Prodotto"} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="text-xs text-black/50 dark:text-white/50">N/A</div>
-                    )}
+              <div className="px-6 py-6 space-y-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Immagine prodotto</h4>
+                  <div className="flex items-start gap-4">
+                    <div className="h-24 w-32 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                      {itemDraft.image_url ? (
+                        <img src={itemDraft.image_url} alt={itemDraft.name || "Prodotto"} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="text-xs text-gray-700">Nessuna immagine</div>
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                      <Upload className="h-4 w-4" />
+                      <span>Carica immagine</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) uploadItemImage(file)
+                        }}
+                      />
+                    </label>
                   </div>
-                  <label className="inline-flex items-center gap-2 rounded-md border px-3 py-2 cursor-pointer" title="Carica">
-                    <Upload className="h-4 w-4" />
-                    <span className="text-sm">Carica</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) uploadItemImage(file)
-                      }}
-                    />
-                  </label>
                 </div>
-                <label className="block text-sm">
-                  <div className="mb-1">Nome</div>
-                  <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={itemDraft.name} onChange={(e) => setItemDraft((d) => ({ ...d, name: e.target.value }))} />
-                </label>
-                <label className="block text-sm">
-                  <div className="mb-1">Descrizione</div>
-                  <textarea className="w-full rounded-md border px-3 py-2 bg-transparent" rows={3} value={itemDraft.description} onChange={(e) => setItemDraft((d) => ({ ...d, description: e.target.value }))} />
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={!!itemDraft.is_public} onChange={(e) => setItemDraft((d) => ({ ...d, is_public: e.target.checked }))} />
-                  <span>Pubblico</span>
-                </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome prodotto</label>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={itemDraft.name} 
+                    onChange={(e) => setItemDraft((d) => ({ ...d, name: e.target.value }))} 
+                    placeholder="Nome del prodotto"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+                  <textarea 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
+                    rows={3} 
+                    value={itemDraft.description} 
+                    onChange={(e) => setItemDraft((d) => ({ ...d, description: e.target.value }))} 
+                    placeholder="Descrizione del prodotto"
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    checked={!!itemDraft.is_public} 
+                    onChange={(e) => setItemDraft((d) => ({ ...d, is_public: e.target.checked }))}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">Prodotto pubblico</label>
+                </div>
               </div>
-              <div className="p-4 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
-                <button className="rounded-md border p-2" title="Chiudi" onClick={closeAddItem}><X className="h-4 w-4" /></button>
-                <button className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50" title="Salva" onClick={saveAddItem} disabled={!itemDraft.name || !itemDraft.category_id || itemDraft.uploading}>
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <button 
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
+                  onClick={closeAddItem}
+                >
+                  Annulla
+                </button>
+                <button 
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200" 
+                  onClick={saveAddItem} 
+                  disabled={!itemDraft.name || !itemDraft.category_id || itemDraft.uploading}
+                >
                   <Save className="h-4 w-4" />
+                  Crea prodotto
                 </button>
               </div>
             </div>

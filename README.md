@@ -1,5 +1,36 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Backoffice ilPDG
+
+Sistema di gestione per il backoffice con funzionalità di:
+- Gestione Cover
+- Gestione Categorie e Prodotti  
+- **Gestione Utenti** (nuovo)
+- Autenticazione e profili utente
+
+### Funzionalità Gestione Utenti
+
+La nuova sezione "Gestione Utenti" permette di:
+
+- ✅ **Creare nuovi utenti** con invio automatico email di registrazione
+- ✅ **Modificare informazioni utenti** (nome, bio, ruolo, immagine profilo)
+- ✅ **Gestire immagini profilo** (upload, visualizzazione, rimozione)
+- ✅ **Disabilitare/Riabilitare utenti** 
+- ✅ **Eliminare utenti** (con conferma)
+- ✅ **Inviare email reset password**
+- ✅ **Gestire ruoli** (super_admin, admin, expert)
+
+### Configurazione
+
+Assicurati di avere le seguenti variabili d'ambiente:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
 ## Getting Started
 
 First, run the development server:

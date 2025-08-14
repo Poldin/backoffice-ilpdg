@@ -183,111 +183,166 @@ export default function CoverPage() {
   }
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
-      <h1 className="text-xl font-semibold mb-4">Cover</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-gray-900 mb-2">Cover</h1>
+          <p className="text-gray-600">Gestisci le immagini di copertina collegate ai prodotti</p>
+        </div>
 
-      <div className="mb-6 flex items-center justify-between">
-        <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2" onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          <span>Nuova immagine</span>
-        </button>
-      </div>
+        <div className="mb-8">
+          <button 
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors duration-200 shadow-sm" 
+            onClick={openAdd}
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nuova immagine</span>
+          </button>
+        </div>
 
-      {loading ? (
-        <div>Caricamento…</div>
-      ) : (
-        <ul className="space-y-3">
-          {items.map((item) => (
-            <li key={item.id} className="border rounded-md p-3">
-              <div className="flex items-center gap-3 justify-between">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="h-16 w-28 shrink-0 rounded-md bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center">
-                    {item.image_url ? (
-                      // use img tag to avoid next/image domain config
-                      <img
-                        src={item.image_url}
-                        alt={item.name ?? "Cover"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-xs text-black/50 dark:text-white/50">N/A</div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{item.name}</div>
-                    {item.product_id && (
-                      <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                        Prodotto: {productIdToName[item.product_id] || "(sconosciuto)"}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-700">Caricamento…</div>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <div className="text-gray-700 mb-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nessuna immagine cover</h3>
+              <p className="text-sm text-gray-700">Inizia aggiungendo la tua prima immagine di copertina.</p>
+            </div>
+            <button
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              onClick={openAdd}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Aggiungi immagine</span>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center gap-6 justify-between">
+                  <div className="flex items-center gap-6 min-w-0 flex-1">
+                    <div className="h-20 w-32 shrink-0 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name ?? "Cover"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-xs text-gray-700">N/A</div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-medium text-gray-900 truncate mb-1">{item.name}</h3>
+                      {item.product_id && (
+                        <p className="text-sm text-gray-600 truncate">
+                          Prodotto: {productIdToName[item.product_id] || "(sconosciuto)"}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        {item.is_public && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Pubblica
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Ordine: {item.order || 0}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="p-2 rounded-md border" title="Su" onClick={() => moveUp(item.id)}>
-                    <ArrowUp className="h-4 w-4" />
-                  </button>
-                  <button className="p-2 rounded-md border" title="Giù" onClick={() => moveDown(item.id)}>
-                    <ArrowDown className="h-4 w-4" />
-                  </button>
-                  <button
-                    className="p-2 rounded-md border"
-                    title={item.is_public ? "Nascondi" : "Pubblica"}
-                    onClick={() => update(item.id, { is_public: !item.is_public })}
-                  >
-                    {item.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                  <button className="p-2 rounded-md border" title="Elimina" onClick={() => remove(item.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200" 
+                      title="Sposta su" 
+                      onClick={() => moveUp(item.id)}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                    <button 
+                      className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200" 
+                      title="Sposta giù" 
+                      onClick={() => moveDown(item.id)}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200"
+                      title={item.is_public ? "Nascondi" : "Pubblica"}
+                      onClick={() => update(item.id, { is_public: !item.is_public })}
+                    >
+                      {item.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    <button 
+                      className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
+                      title="Elimina" 
+                      onClick={() => remove(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
       {isAddOpen && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" role="button" tabIndex={-1} onClick={closeAdd} />
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={closeAdd} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
-              <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-semibold">Aggiungi immagine cover</h3>
-                <button className="rounded-md border p-2" title="Chiudi" onClick={closeAdd}><X className="h-4 w-4" /></button>
+            <div className="w-full max-w-lg rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Aggiungi immagine cover</h3>
+                <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={closeAdd}>
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-20 w-32 rounded bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center">
-                    {draft.image_url ? (
-                      <img src={draft.image_url} alt={draft.name || "Cover"} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="text-xs text-black/50 dark:text-white/50">N/A</div>
-                    )}
+              <div className="px-6 py-6 space-y-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Immagine cover</h4>
+                  <div className="flex items-start gap-4">
+                    <div className="h-24 w-32 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                      {draft.image_url ? (
+                        <img src={draft.image_url} alt={draft.name || "Cover"} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="text-xs text-gray-700">Nessuna immagine</div>
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                      <Upload className="h-4 w-4" />
+                      <span>Carica immagine</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) uploadImageToDraft(file)
+                        }}
+                      />
+                    </label>
                   </div>
-                  <label className="inline-flex items-center gap-2 rounded-md border px-3 py-2 cursor-pointer" title="Carica">
-                    <Upload className="h-4 w-4" />
-                    <span className="text-sm">Carica</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) uploadImageToDraft(file)
-                      }}
-                    />
-                  </label>
                 </div>
-                <label className="block text-sm">
-                  <div className="mb-1 text-gray-700 dark:text-gray-300">Nome</div>
-                  <input className="w-full rounded-md border px-3 py-2 bg-transparent" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-                </label>
-                <div className="block text-sm">
-                  <div className="mb-1 text-gray-700 dark:text-gray-300">Prodotto collegato</div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={draft.name} 
+                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
+                    placeholder="Nome dell'immagine cover"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prodotto collegato</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="rounded-md border px-3 py-2"
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
                       onClick={() => setIsProductPickerOpen(true)}
                     >
                       {draft.product_id
@@ -297,7 +352,7 @@ export default function CoverPage() {
                     {draft.product_id && (
                       <button
                         type="button"
-                        className="rounded-md border px-2 py-2"
+                        className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200"
                         title="Rimuovi selezione"
                         onClick={() => setDraft((d) => ({ ...d, product_id: "" }))}
                       >
@@ -306,19 +361,24 @@ export default function CoverPage() {
                     )}
                   </div>
                   {productOptions.length === 0 && (
-                    <div className="mt-1 text-xs text-black/60 dark:text-white/60">Nessun prodotto disponibile. Crea prima un prodotto in Categorie.</div>
+                    <div className="mt-2 text-xs text-gray-600">Nessun prodotto disponibile. Crea prima un prodotto in Categorie.</div>
                   )}
                 </div>
               </div>
-              <div className="p-4 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2">
-                <button className="rounded-md border p-2" title="Chiudi" onClick={closeAdd}><X className="h-4 w-4" /></button>
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <button 
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
+                  onClick={closeAdd}
+                >
+                  Annulla
+                </button>
                 <button
-                  className="rounded-md bg-indigo-600 text-white p-2 disabled:opacity-50"
-                  title="Salva"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200"
                   onClick={saveAdd}
                   disabled={!draft.name || !draft.image_url || !draft.product_id || draft.uploading}
                 >
                   <Save className="h-4 w-4" />
+                  Salva cover
                 </button>
               </div>
             </div>
@@ -329,27 +389,28 @@ export default function CoverPage() {
       {isProductPickerOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40"
             role="button"
             tabIndex={-1}
             onClick={() => setIsProductPickerOpen(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden">
-              <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-semibold">Seleziona prodotto</h3>
-                <button className="rounded-md border p-2" title="Chiudi" onClick={() => setIsProductPickerOpen(false)}><X className="h-4 w-4" /></button>
+            <div className="w-full max-w-2xl rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Seleziona prodotto</h3>
+                <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={() => setIsProductPickerOpen(false)}>
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <div className="p-4 space-y-3">
+              <div className="px-6 py-4 space-y-4">
                 <input
                   autoFocus
                   placeholder="Cerca per nome…"
-                  className="w-full rounded-md border px-3 py-2 bg-transparent"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
                   value={productQuery}
                   onChange={(e) => setProductQuery(e.target.value)}
                 />
-                <div className="max-h-80 overflow-auto border rounded-md divide-y divide-black/10 dark:divide-white/10">
-                  {/* Results will be filled below */}
+                <div className="max-h-80 overflow-auto border border-gray-200 rounded-lg divide-y divide-gray-200">
                   <ProductSearchResults
                     query={productQuery}
                     onPick={(p) => {
@@ -415,17 +476,17 @@ function ProductSearchResults({ query, onPick }: { query: string; onPick: (p: Pr
   }, [query])
 
   if (loading) {
-    return <div className="p-3 text-sm text-black/60 dark:text-white/60">Caricamento…</div>
+    return <div className="p-4 text-sm text-gray-700">Caricamento…</div>
   }
   if (results.length === 0) {
-    return <div className="p-3 text-sm text-black/60 dark:text-white/60">Nessun risultato</div>
+    return <div className="p-4 text-sm text-gray-700">Nessun risultato</div>
   }
   return (
     <div>
       {results.map((r) => (
         <button
           key={r.id}
-          className="w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+          className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-gray-900 transition-colors duration-200"
           onClick={() => onPick(r)}
         >
           {formatProductLabel(r)}

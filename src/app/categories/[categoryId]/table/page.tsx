@@ -226,134 +226,189 @@ export default function CategoryTableEditorPage() {
   const title = useMemo(() => category?.name || "Categoria", [category?.name])
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Link href="/categories" className="inline-flex items-center gap-2 rounded-md border px-3 py-2">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Liste</span>
-          </Link>
-          <h1 className="text-xl font-semibold truncate">{title} — editor tabellare</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <Link href="/categories" className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-200">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Torna alle categorie</span>
+            </Link>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-medium text-gray-900 mb-2">{title}</h1>
+              <p className="text-gray-600">Editor tabellare per modifica rapida dei prodotti</p>
+            </div>
+            <button
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors duration-200 shadow-sm disabled:opacity-50"
+              onClick={addRow}
+              disabled={creating}
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              <span>Nuovo prodotto</span>
+            </button>
+          </div>
         </div>
-        <button
-          className="inline-flex items-center gap-2 rounded-md border px-3 py-2 disabled:opacity-50"
-          onClick={addRow}
-          disabled={creating}
-          title="Nuova riga"
-        >
-          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          <span>Nuova riga</span>
-        </button>
-      </div>
 
-      <div className="mb-2 text-sm text-black/60 dark:text-white/60">Modifica veloce in tabella. Salvataggio automatico dopo 0.5s.</div>
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">💡 Le modifiche vengono salvate automaticamente dopo 0.5 secondi di inattività.</p>
+        </div>
 
-      {loading ? (
-        <div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Caricamento…</div>
-      ) : rows.length === 0 ? (
-        <div className="text-sm text-black/60 dark:text-white/60">Nessun elemento. Aggiungi una riga.</div>
-      ) : (
-        <div className="overflow-auto border rounded-md">
-          <table className="min-w-[1100px] w-full text-sm">
-            <thead className="bg-black/5 dark:bg-white/10">
-              <tr>
-                <th className="text-left p-2 w-[20rem]">Nome</th>
-                <th className="text-left p-2 w-[22rem]">Immagine</th>
-                <th className="text-left p-2 w-[8rem]">Pubblico</th>
-                <th className="text-left p-2 w-[8rem]">Stato</th>
-                <th className="text-right p-2 w-[6rem]">Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <Fragment key={r.id}>
-                  <tr className="border-t">
-                    <td className="p-2 align-top">
-                      <input
-                        className="w-full rounded-md border px-2 py-1 bg-transparent"
-                        value={r.name ?? ""}
-                        onChange={(e) => updateCell(r.id, { name: e.target.value })}
-                        placeholder="Nome…"
-                      />
-                    </td>
-                    <td className="p-2 align-top">
-                      <div className="flex items-start gap-3">
-                        <div className="h-14 w-20 rounded bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center">
-                          {r.image_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={r.image_url} alt={r.name || "Immagine"} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="text-[10px] text-black/50 dark:text-white/50">N/A</div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex items-center gap-2 rounded-md border px-2 py-1 cursor-pointer" title="Carica">
-                            {uploading[r.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                            <span className="text-sm">Carica</span>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-3 text-gray-700">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Caricamento prodotti...</span>
+            </div>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <div className="text-gray-700 mb-4">
+              <Circle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun prodotto</h3>
+              <p className="text-sm text-gray-700">Inizia aggiungendo il tuo primo prodotto a questa categoria.</p>
+            </div>
+            <button
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              onClick={addRow}
+              disabled={creating}
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              <span>Aggiungi prodotto</span>
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-[1200px] w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-900 w-[24rem]">Nome</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-900 w-[26rem]">Immagine</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-900 w-[10rem]">Visibilità</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-900 w-[10rem]">Stato</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-gray-900 w-[8rem]">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {rows.map((r) => (
+                    <Fragment key={r.id}>
+                      <tr className="hover:bg-gray-50 transition-colors duration-200">
+                        <td className="px-6 py-4 align-top">
+                          <input
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
+                            value={r.name ?? ""}
+                            onChange={(e) => updateCell(r.id, { name: e.target.value })}
+                            placeholder="Nome del prodotto"
+                          />
+                        </td>
+                        <td className="px-6 py-4 align-top">
+                          <div className="flex items-start gap-4">
+                            <div className="h-16 w-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                              {r.image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={r.image_url} alt={r.name || "Immagine"} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="text-xs text-gray-700">N/A</div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                                {uploading[r.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                <span>Carica</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={!!uploading[r.id]}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) uploadImage(r.id, file)
+                                  }}
+                                />
+                              </label>
+                              {r.image_url && (
+                                <button 
+                                  className="inline-flex items-center p-2 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
+                                  title="Rimuovi immagine" 
+                                  onClick={() => removeImage(r.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 align-top">
+                          <label className="inline-flex items-center gap-2">
                             <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={!!uploading[r.id]}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) uploadImage(r.id, file)
-                              }}
+                              type="checkbox"
+                              checked={!!r.is_public}
+                              onChange={(e) => updateCell(r.id, { is_public: e.target.checked })}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
+                            <span className="text-sm text-gray-700">Pubblica</span>
                           </label>
-                          {r.image_url && (
-                            <button className="rounded-md border px-2 py-1" title="Rimuovi immagine" onClick={() => removeImage(r.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                        </td>
+                        <td className="px-6 py-4 align-top">
+                          {states[r.id] === "saving" && (
+                            <span className="inline-flex items-center gap-2 text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Salvando
+                            </span>
                           )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-2 align-top">
-                      <label className="inline-flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={!!r.is_public}
-                          onChange={(e) => updateCell(r.id, { is_public: e.target.checked })}
-                        />
-                        <span>Pubblica</span>
-                      </label>
-                    </td>
-                    <td className="p-2 align-top">
-                      {states[r.id] === "saving" && (
-                        <span className="inline-flex items-center gap-1 text-black/60 dark:text-white/60"><Loader2 className="h-3 w-3 animate-spin" /> Salvando…</span>
-                      )}
-                      {states[r.id] === "saved" && (
-                        <span className="inline-flex items-center gap-1 text-green-600"><Check className="h-3 w-3" /> Salvato</span>
-                      )}
-                      {states[r.id] === "error" && (
-                        <span className="inline-flex items-center gap-1 text-red-600"><Circle className="h-3 w-3" /> Errore</span>
-                      )}
-                    </td>
-                    <td className="p-2 align-top text-right">
-                      <button className="p-2 rounded-md border" title="Elimina" onClick={() => deleteRow(r.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                  <tr className="">
-                    <td className="p-2" colSpan={5}>
-                      {/* <label className="block text-xs mb-1 text-black/60 dark:text-white/60">Descrizione</label> */}
-                      <textarea
-                        className="w-full rounded-md border px-3 py-2 bg-transparent min-h-[8rem]"
-                        rows={8}
-                        value={r.description ?? ""}
-                        onChange={(e) => updateCell(r.id, { description: e.target.value })}
-                        placeholder="Descrizione…"
-                      />
-                    </td>
-                  </tr>
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                          {states[r.id] === "saved" && (
+                            <span className="inline-flex items-center gap-2 text-green-600 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                              <Check className="h-3 w-3" />
+                              Salvato
+                            </span>
+                          )}
+                          {states[r.id] === "error" && (
+                            <span className="inline-flex items-center gap-2 text-red-600 bg-red-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                              <Circle className="h-3 w-3" />
+                              Errore
+                            </span>
+                          )}
+                          {states[r.id] === "idle" && (
+                            <span className="inline-flex items-center gap-2 text-gray-700 bg-gray-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                              <Circle className="h-3 w-3" />
+                              Pronto
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 align-top text-right">
+                          <button 
+                            className="inline-flex items-center p-2 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
+                            title="Elimina prodotto" 
+                            onClick={() => deleteRow(r.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                      <tr className="bg-gray-50">
+                        <td className="px-6 py-4" colSpan={5}>
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">Descrizione</label>
+                            <textarea
+                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none"
+                              rows={6}
+                              value={r.description ?? ""}
+                              onChange={(e) => updateCell(r.id, { description: e.target.value })}
+                              placeholder="Descrizione dettagliata del prodotto..."
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
