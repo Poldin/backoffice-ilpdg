@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink } from "lucide-react"
+import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink, Hash } from "lucide-react"
 import { toast } from "sonner"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
+import { generateSlug } from "@/app/lib/utils/slug"
 
 type Category = {
   id: string
   created_at: string
   name: string | null
+  slug: string | null
   is_public: boolean | null
   expert_id?: string | null
   category_description?: string | null
@@ -20,6 +22,7 @@ type CategoryItem = {
   created_at: string
   category_id: string | null
   name: string | null
+  slug: string | null
   description: string | null
   image_url: string | null
   is_public: boolean | null
@@ -33,8 +36,9 @@ export default function CategoriesPage() {
   const selectedItem = items.find((i) => i.id === selectedItemId) || null
   const [draft, setDraft] = useState<Partial<CategoryItem>>({})
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
-  const [categoryDraft, setCategoryDraft] = useState<{ name: string; is_public: boolean; expert_id: string; category_description: string }>({
+  const [categoryDraft, setCategoryDraft] = useState<{ name: string; slug: string; is_public: boolean; expert_id: string; category_description: string }>({
     name: "",
+    slug: "",
     is_public: true,
     expert_id: "",
     category_description: "",
@@ -43,15 +47,16 @@ export default function CategoriesPage() {
   const [itemDraft, setItemDraft] = useState<{
     category_id: string
     name: string
+    slug: string
     description: string
     image_url: string
     is_public: boolean
     uploading: boolean
-  }>({ category_id: "", name: "", description: "", image_url: "", is_public: true, uploading: false })
+  }>({ category_id: "", name: "", slug: "", description: "", image_url: "", is_public: true, uploading: false })
   const [detailsWidth, setDetailsWidth] = useState<number>(560)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [isEditCategorySidebarOpen, setIsEditCategorySidebarOpen] = useState(false)
-  const [originalCategoryData, setOriginalCategoryData] = useState<{ name: string; is_public: boolean; expert_id: string; category_description: string } | null>(null)
+  const [originalCategoryData, setOriginalCategoryData] = useState<{ name: string; slug: string; is_public: boolean; expert_id: string; category_description: string } | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [originalProductData, setOriginalProductData] = useState<Partial<CategoryItem> | null>(null)
   const [hasUnsavedProductChanges, setHasUnsavedProductChanges] = useState(false)
@@ -91,6 +96,7 @@ export default function CategoriesPage() {
         id: selectedItem.id,
         category_id: selectedItem.category_id ?? "",
         name: selectedItem.name ?? "",
+        slug: selectedItem.slug ?? "",
         description: selectedItem.description ?? "",
         image_url: selectedItem.image_url ?? "",
         is_public: !!selectedItem.is_public,
@@ -128,24 +134,31 @@ export default function CategoriesPage() {
     }
   }, [isResizingRef.current])
 
-  async function createCategory(payload: { name: string; is_public: boolean }) {
+  async function createCategory(payload: { name: string; slug: string; is_public: boolean }) {
     const res = await fetch("/api/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: payload.name, is_public: payload.is_public, expert_id: categoryDraft.expert_id || null, category_description: categoryDraft.category_description || null }),
+      body: JSON.stringify({ 
+        name: payload.name, 
+        slug: payload.slug,
+        is_public: payload.is_public, 
+        expert_id: categoryDraft.expert_id || null, 
+        category_description: categoryDraft.category_description || null 
+      }),
     })
     const created = await res.json()
     setCategories((prev) => [created, ...prev])
     toast.success("Categoria creata")
   }
 
-  async function updateCategory(id: string, payload: { name: string; is_public: boolean; expert_id: string; category_description: string }, skipToast = false) {
+  async function updateCategory(id: string, payload: { name: string; slug: string; is_public: boolean; expert_id: string; category_description: string }, skipToast = false) {
     const res = await fetch("/api/categories", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id,
         name: payload.name,
+        slug: payload.slug,
         is_public: payload.is_public,
         expert_id: payload.expert_id || null,
         category_description: payload.category_description || null,
@@ -164,6 +177,7 @@ export default function CategoriesPage() {
     
     return (
       categoryDraft.name !== originalCategoryData.name ||
+      categoryDraft.slug !== originalCategoryData.slug ||
       categoryDraft.is_public !== originalCategoryData.is_public ||
       categoryDraft.expert_id !== originalCategoryData.expert_id ||
       categoryDraft.category_description !== originalCategoryData.category_description
@@ -181,6 +195,7 @@ export default function CategoriesPage() {
     
     return (
       draft.name !== originalProductData.name ||
+      draft.slug !== originalProductData.slug ||
       draft.description !== originalProductData.description ||
       draft.image_url !== originalProductData.image_url ||
       draft.category_id !== originalProductData.category_id ||
@@ -323,6 +338,7 @@ export default function CategoriesPage() {
   async function createItem(payload: {
     category_id: string
     name: string
+    slug: string
     description: string
     image_url: string
     is_public: boolean
@@ -375,6 +391,7 @@ export default function CategoriesPage() {
         id: draft.id,
         category_id: draft.category_id || null,
         name: draft.name ?? null,
+        slug: draft.slug ?? null,
         description: draft.description ?? null,
         image_url: draft.image_url ?? null,
         is_public: draft.is_public ?? true,
@@ -387,7 +404,7 @@ export default function CategoriesPage() {
 
   function openAddCategory() {
     setEditingCategoryId(null)
-    setCategoryDraft({ name: "", is_public: true, expert_id: "", category_description: "" })
+    setCategoryDraft({ name: "", slug: "", is_public: true, expert_id: "", category_description: "" })
     setIsAddCategoryOpen(true)
     toast.message("Compila i campi e salva")
   }
@@ -399,7 +416,7 @@ export default function CategoriesPage() {
     if (editingCategoryId) {
       await updateCategory(editingCategoryId, categoryDraft)
     } else {
-      await createCategory({ name: categoryDraft.name, is_public: categoryDraft.is_public })
+      await createCategory({ name: categoryDraft.name, slug: categoryDraft.slug, is_public: categoryDraft.is_public })
     }
     setIsAddCategoryOpen(false)
     setEditingCategoryId(null)
@@ -565,7 +582,7 @@ export default function CategoriesPage() {
   }
 
   function openAddItem(categoryId: string) {
-    setItemDraft({ category_id: categoryId, name: "", description: "", image_url: "", is_public: true, uploading: false })
+    setItemDraft({ category_id: categoryId, name: "", slug: "", description: "", image_url: "", is_public: true, uploading: false })
     setIsAddItemOpen(true)
     toast.message("Carica un'immagine e compila i campi")
   }
@@ -577,6 +594,7 @@ export default function CategoriesPage() {
     await createItem({
       category_id: itemDraft.category_id,
       name: itemDraft.name,
+      slug: itemDraft.slug,
       description: itemDraft.description,
       image_url: itemDraft.image_url,
       is_public: itemDraft.is_public,
@@ -705,6 +723,7 @@ export default function CategoriesPage() {
                             setEditingCategoryId(c.id)
                             const originalData = {
                               name: c.name || "",
+                              slug: c.slug || "",
                               is_public: !!c.is_public,
                               expert_id: c.expert_id || "",
                               category_description: c.category_description || "",
@@ -931,6 +950,27 @@ export default function CategoriesPage() {
                 </div>
                 
                 <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Slug</label>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors duration-200"
+                      onClick={() => setDraft((d) => ({ ...d, slug: generateSlug(d.name || "") }))}
+                      title="Genera slug automaticamente dal nome"
+                    >
+                      <Hash className="h-3 w-3" />
+                      Auto
+                    </button>
+                  </div>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={draft.slug ?? ""} 
+                    onChange={(e) => setDraft((d) => ({ ...d, slug: e.target.value }))} 
+                    placeholder="slug-prodotto"
+                  />
+                </div>
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
                   <select 
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
@@ -985,6 +1025,26 @@ export default function CategoriesPage() {
                     value={categoryDraft.name} 
                     onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} 
                     placeholder="Nome della categoria"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Slug</label>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors duration-200"
+                      onClick={() => setCategoryDraft((d) => ({ ...d, slug: generateSlug(d.name) }))}
+                      title="Genera slug automaticamente dal nome"
+                    >
+                      <Hash className="h-3 w-3" />
+                      Auto
+                    </button>
+                  </div>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={categoryDraft.slug} 
+                    onChange={(e) => setCategoryDraft((d) => ({ ...d, slug: e.target.value }))} 
+                    placeholder="slug-categoria"
                   />
                 </div>
                 <div>
@@ -1086,6 +1146,27 @@ export default function CategoriesPage() {
                 </div>
                 
                 <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Slug</label>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors duration-200"
+                      onClick={() => setCategoryDraft((d) => ({ ...d, slug: generateSlug(d.name) }))}
+                      title="Genera slug automaticamente dal nome"
+                    >
+                      <Hash className="h-3 w-3" />
+                      Auto
+                    </button>
+                  </div>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={categoryDraft.slug} 
+                    onChange={(e) => setCategoryDraft((d) => ({ ...d, slug: e.target.value }))} 
+                    placeholder="slug-categoria"
+                  />
+                </div>
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Esperto associato</label>
                   <div className="flex items-center gap-2">
                     <button
@@ -1182,6 +1263,26 @@ export default function CategoriesPage() {
                     value={itemDraft.name} 
                     onChange={(e) => setItemDraft((d) => ({ ...d, name: e.target.value }))} 
                     placeholder="Nome del prodotto"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Slug</label>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors duration-200"
+                      onClick={() => setItemDraft((d) => ({ ...d, slug: generateSlug(d.name) }))}
+                      title="Genera slug automaticamente dal nome"
+                    >
+                      <Hash className="h-3 w-3" />
+                      Auto
+                    </button>
+                  </div>
+                  <input 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
+                    value={itemDraft.slug} 
+                    onChange={(e) => setItemDraft((d) => ({ ...d, slug: e.target.value }))} 
+                    placeholder="slug-prodotto"
                   />
                 </div>
                 <div>

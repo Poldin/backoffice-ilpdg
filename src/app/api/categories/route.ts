@@ -6,7 +6,7 @@ export async function GET() {
   const [cats, items] = await Promise.all([
     supabase
       .from("products_categories")
-      .select("id,created_at,name,is_public,expert_id,category_description, expert:profile!products_categories_expert_id_fkey(id,nome,img_url)")
+      .select("id,created_at,name,slug,is_public,expert_id,category_description, expert:profile!products_categories_expert_id_fkey(id,nome,img_url)")
       .order("created_at", { ascending: false }),
     supabase
       .from("products_categories_items")
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       .insert({
         category_id: body?.category_id ?? null,
         name: body?.name ?? null,
+        slug: body?.slug ?? null,
         description: body?.description ?? null,
         image_url: body?.image_url ?? null,
         is_public: body?.is_public ?? true,
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     .from("products_categories")
     .insert({
       name: body?.name ?? null,
+      slug: body?.slug ?? null,
       is_public: body?.is_public ?? true,
       expert_id: body?.expert_id ?? null,
       category_description: body?.category_description ?? null,
@@ -71,6 +73,7 @@ export async function PUT(req: NextRequest) {
       .update({
         category_id: body?.category_id,
         name: body?.name,
+        slug: body?.slug,
         description: body?.description,
         image_url: body?.image_url,
         is_public: body?.is_public,
@@ -96,6 +99,7 @@ export async function PUT(req: NextRequest) {
   }
   const patch: Record<string, unknown> = {}
   if (Object.prototype.hasOwnProperty.call(body, "name")) patch.name = body.name
+  if (Object.prototype.hasOwnProperty.call(body, "slug")) patch.slug = body.slug
   if (Object.prototype.hasOwnProperty.call(body, "is_public")) patch.is_public = body.is_public
   if (Object.prototype.hasOwnProperty.call(body, "expert_id")) patch.expert_id = body.expert_id
   if (Object.prototype.hasOwnProperty.call(body, "category_description")) patch.category_description = body.category_description
