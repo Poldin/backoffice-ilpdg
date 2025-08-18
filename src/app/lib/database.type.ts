@@ -47,6 +47,7 @@ export type Database = {
           id: string
           is_public: boolean | null
           name: string | null
+          slug: string | null
         }
         Insert: {
           category_description?: string | null
@@ -55,6 +56,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           name?: string | null
+          slug?: string | null
         }
         Update: {
           category_description?: string | null
@@ -63,6 +65,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           name?: string | null
+          slug?: string | null
         }
         Relationships: [
           {
@@ -83,6 +86,7 @@ export type Database = {
           image_url: string | null
           is_public: boolean | null
           name: string | null
+          slug: string | null
         }
         Insert: {
           category_id?: string | null
@@ -92,6 +96,7 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean | null
           name?: string | null
+          slug?: string | null
         }
         Update: {
           category_id?: string | null
@@ -101,6 +106,7 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean | null
           name?: string | null
+          slug?: string | null
         }
         Relationships: [
           {

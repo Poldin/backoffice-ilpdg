@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil } from "lucide-react"
+import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 
@@ -51,6 +51,10 @@ export default function CategoriesPage() {
   const [detailsWidth, setDetailsWidth] = useState<number>(560)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [isEditCategorySidebarOpen, setIsEditCategorySidebarOpen] = useState(false)
+  const [originalCategoryData, setOriginalCategoryData] = useState<{ name: string; is_public: boolean; expert_id: string; category_description: string } | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [originalProductData, setOriginalProductData] = useState<Partial<CategoryItem> | null>(null)
+  const [hasUnsavedProductChanges, setHasUnsavedProductChanges] = useState(false)
   const isResizingRef = useRef(false)
   const startXRef = useRef(0)
   const startWidthRef = useRef(560)
@@ -83,16 +87,21 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     if (selectedItem) {
-      setDraft({
+      const productData = {
         id: selectedItem.id,
         category_id: selectedItem.category_id ?? "",
         name: selectedItem.name ?? "",
         description: selectedItem.description ?? "",
         image_url: selectedItem.image_url ?? "",
         is_public: !!selectedItem.is_public,
-      })
+      }
+      setDraft(productData)
+      setOriginalProductData({ ...productData })
+      setHasUnsavedProductChanges(false)
     } else {
       setDraft({})
+      setOriginalProductData(null)
+      setHasUnsavedProductChanges(false)
     }
   }, [selectedItemId])
 
@@ -130,7 +139,7 @@ export default function CategoriesPage() {
     toast.success("Categoria creata")
   }
 
-  async function updateCategory(id: string, payload: { name: string; is_public: boolean; expert_id: string; category_description: string }) {
+  async function updateCategory(id: string, payload: { name: string; is_public: boolean; expert_id: string; category_description: string }, skipToast = false) {
     const res = await fetch("/api/categories", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -144,7 +153,131 @@ export default function CategoriesPage() {
     })
     const updated = await res.json()
     setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)))
-    toast.success("Categoria aggiornata")
+    if (!skipToast) {
+      toast.success("Categoria aggiornata")
+    }
+  }
+
+  // Check if category data has unsaved changes
+  function checkForUnsavedChanges() {
+    if (!originalCategoryData) return false
+    
+    return (
+      categoryDraft.name !== originalCategoryData.name ||
+      categoryDraft.is_public !== originalCategoryData.is_public ||
+      categoryDraft.expert_id !== originalCategoryData.expert_id ||
+      categoryDraft.category_description !== originalCategoryData.category_description
+    )
+  }
+
+  // Update unsaved changes state whenever categoryDraft changes
+  useEffect(() => {
+    setHasUnsavedChanges(checkForUnsavedChanges())
+  }, [categoryDraft, originalCategoryData])
+
+  // Check if product data has unsaved changes
+  function checkForUnsavedProductChanges() {
+    if (!originalProductData) return false
+    
+    return (
+      draft.name !== originalProductData.name ||
+      draft.description !== originalProductData.description ||
+      draft.image_url !== originalProductData.image_url ||
+      draft.category_id !== originalProductData.category_id ||
+      draft.is_public !== originalProductData.is_public
+    )
+  }
+
+  // Update unsaved product changes state whenever draft changes
+  useEffect(() => {
+    setHasUnsavedProductChanges(checkForUnsavedProductChanges())
+  }, [draft, originalProductData])
+
+  // Save product changes
+  async function saveProductChanges() {
+    if (!hasUnsavedProductChanges || !draft.id) return
+    
+    await saveDetails()
+    setHasUnsavedProductChanges(false)
+    setOriginalProductData({ ...draft })
+  }
+
+  // Cancel product changes and revert to original data
+  function cancelProductChanges() {
+    if (!originalProductData) return
+    
+    setDraft({ ...originalProductData })
+    setHasUnsavedProductChanges(false)
+  }
+
+  // Reset unsaved changes when sidebar closes
+  useEffect(() => {
+    if (!isEditCategorySidebarOpen) {
+      setHasUnsavedChanges(false)
+      setOriginalCategoryData(null)
+    }
+  }, [isEditCategorySidebarOpen])
+
+  // Keyboard shortcuts for saving
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Check for Ctrl+S (Windows/Linux) or Cmd+S (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault() // Prevent browser's default save dialog
+        
+        // console.log('Ctrl+S pressed', {
+        //   isEditCategorySidebarOpen,
+        //   hasUnsavedChanges,
+        //   editingCategoryId,
+        //   selectedItemId,
+        //   hasUnsavedProductChanges
+        // })
+        
+        // Save category changes if category sidebar is open and has unsaved changes
+        if (isEditCategorySidebarOpen && hasUnsavedChanges && editingCategoryId) {
+          console.log('Saving category changes')
+          saveCategoryChanges()
+          return
+        }
+        
+        // Save product changes if product details are open and has unsaved changes
+        if (selectedItemId && hasUnsavedProductChanges) {
+          console.log('Saving product changes')
+          saveProductChanges()
+          return
+        }
+        
+        console.log('No action taken - conditions not met')
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isEditCategorySidebarOpen, hasUnsavedChanges, editingCategoryId, selectedItemId, hasUnsavedProductChanges, saveCategoryChanges, saveProductChanges])
+
+  // Reset unsaved product changes when details panel closes
+  useEffect(() => {
+    if (!selectedItemId) {
+      setHasUnsavedProductChanges(false)
+      setOriginalProductData(null)
+    }
+  }, [selectedItemId])
+
+  // Save category changes
+  async function saveCategoryChanges() {
+    if (!editingCategoryId || !hasUnsavedChanges) return
+    
+    await updateCategory(editingCategoryId, categoryDraft, false) // show toast
+    setHasUnsavedChanges(false)
+    setOriginalCategoryData({ ...categoryDraft })
+  }
+
+  // Cancel category changes and revert to original data
+  function cancelCategoryChanges() {
+    if (!originalCategoryData) return
+    
+    setCategoryDraft({ ...originalCategoryData })
+    setHasUnsavedChanges(false)
   }
 
   function sanitizeFileName(name: string): string {
@@ -273,6 +406,29 @@ export default function CategoriesPage() {
   }
 
   type Expert = { id: string; nome: string | null; img_url: string | null }
+
+  function ToggleSwitch({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
+    return (
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            checked ? 'bg-indigo-600' : 'bg-gray-200'
+          }`}
+          onClick={() => onChange(!checked)}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+              checked ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+        <label className="text-sm text-gray-700 cursor-pointer" onClick={() => onChange(!checked)}>
+          {label}
+        </label>
+      </div>
+    )
+  }
 
   function ExpertPicker({ selectedExpertId, onPick }: { selectedExpertId?: string | null; onPick: (e: Expert | null) => void }) {
     const [open, setOpen] = useState(false)
@@ -547,12 +703,15 @@ export default function CategoriesPage() {
                           onClick={(e) => {
                             e.preventDefault()
                             setEditingCategoryId(c.id)
-                            setCategoryDraft({
+                            const originalData = {
                               name: c.name || "",
                               is_public: !!c.is_public,
                               expert_id: c.expert_id || "",
                               category_description: c.category_description || "",
-                            })
+                            }
+                            setCategoryDraft({ ...originalData })
+                            setOriginalCategoryData({ ...originalData })
+                            setHasUnsavedChanges(false)
                             setIsEditCategorySidebarOpen(true)
                           }}
                         >
@@ -602,7 +761,11 @@ export default function CategoriesPage() {
                       ) : (
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                           {related.map((i) => (
-                            <div key={i.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+                            <div 
+                              key={i.id} 
+                              className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer relative"
+                              onClick={() => openDetails(i)}
+                            >
                               <div className="flex items-start gap-3">
                                 <div className="h-16 w-16 flex-shrink-0 rounded-lg bg-gray-100 overflow-hidden">
                                   {i.image_url ? (
@@ -612,12 +775,9 @@ export default function CategoriesPage() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <button 
-                                    className="text-sm font-medium text-gray-900 hover:text-indigo-600 truncate block w-full text-left transition-colors duration-200" 
-                                    onClick={() => openDetails(i)}
-                                  >
+                                  <h4 className="text-sm font-medium text-gray-900 hover:text-indigo-600 truncate transition-colors duration-200">
                                     {i.name}
-                                  </button>
+                                  </h4>
                                   <div className="flex items-center gap-2 mt-2">
                                     {i.is_public && (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
@@ -627,18 +787,24 @@ export default function CategoriesPage() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center justify-end gap-1 mt-3">
+                              <div className="flex items-center justify-end gap-1 mt-3 relative z-10">
                                 <button 
                                   className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors duration-200" 
                                   title={i.is_public ? "Nascondi" : "Pubblica"} 
-                                  onClick={() => toggleItemVisibility(i.id, i.is_public)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleItemVisibility(i.id, i.is_public)
+                                  }}
                                 >
                                   {i.is_public ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                                 </button>
                                 <button 
                                   className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
                                   title="Elimina" 
-                                  onClick={() => removeItem(i.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    removeItem(i.id)
+                                  }}
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </button>
@@ -666,62 +832,94 @@ export default function CategoriesPage() {
           />
           <aside
             className="fixed top-0 right-0 h-screen bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl"
-            style={{ width: detailsWidth }}
+            style={{ width: detailsWidth * 2 }}
           >
             <div
               className="absolute left-0 top-0 h-full w-1 cursor-col-resize bg-transparent"
               onMouseDown={(e) => {
                 isResizingRef.current = true
                 startXRef.current = e.clientX
-                startWidthRef.current = detailsWidth
+                startWidthRef.current = detailsWidth * 2
                 document.body.style.cursor = "col-resize"
               }}
             />
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Dettagli prodotto</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-medium text-gray-900">Dettagli prodotto</h3>
+                {hasUnsavedProductChanges && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 transition-colors duration-200"
+                      onClick={saveProductChanges}
+                      title={`Salva modifiche (${navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}+S)`}
+                    >
+                      <Save className="h-3 w-3" />
+                      Salva
+                    </button>
+                    <button
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      onClick={cancelProductChanges}
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                )}
+              </div>
               <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={closeDetails}>
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="px-6 py-6 space-y-6 overflow-auto">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Immagine prodotto</h4>
-                <div className="flex items-start gap-4">
-                  <div className="h-20 w-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
-                    {draft.image_url ? (
-                      <img src={draft.image_url} alt={draft.name || "Prodotto"} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="text-xs text-gray-700">Nessuna immagine</div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
-                      <Upload className="h-4 w-4" />
-                      <span>Carica</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) uploadImage(file)
-                        }}
-                      />
-                    </label>
-                    {draft.image_url && (
-                      <button 
-                        className="inline-flex items-center p-2 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
-                        title="Rimuovi immagine" 
-                        onClick={removeImageFromStorage}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+            
+            {/* Two column layout */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Left column - Product info */}
+              <div className="w-1/2 px-6 py-6 space-y-6 overflow-auto border-r border-gray-200">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Immagine prodotto</h4>
+                  <div className="flex items-start gap-4">
+                    <div className="h-20 w-28 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                      {draft.image_url ? (
+                        <img src={draft.image_url} alt={draft.name || "Prodotto"} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="text-xs text-gray-700">Nessuna immagine</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                        <Upload className="h-4 w-4" />
+                        <span>Carica</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) uploadImage(file)
+                          }}
+                        />
+                      </label>
+                      {draft.image_url && (
+                        <>
+                          <button 
+                            className="inline-flex items-center p-2 text-blue-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors duration-200" 
+                            title="Apri immagine in nuova tab" 
+                            onClick={() => draft.image_url && window.open(draft.image_url, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </button>
+                          <button 
+                            className="inline-flex items-center p-2 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200" 
+                            title="Rimuovi immagine" 
+                            onClick={removeImageFromStorage}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
                   <input 
@@ -729,27 +927,6 @@ export default function CategoriesPage() {
                     value={draft.name ?? ""} 
                     onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
                     placeholder="Nome del prodotto"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
-                  <textarea 
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
-                    rows={4} 
-                    value={draft.description ?? ""} 
-                    onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} 
-                    placeholder="Descrizione del prodotto"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">URL immagine</label>
-                  <input 
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
-                    value={draft.image_url ?? ""} 
-                    onChange={(e) => setDraft((d) => ({ ...d, image_url: e.target.value }))} 
-                    placeholder="https://..."
                   />
                 </div>
                 
@@ -767,33 +944,23 @@ export default function CategoriesPage() {
                   </select>
                 </div>
                 
-                <div className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    checked={!!draft.is_public} 
-                    onChange={(e) => setDraft((d) => ({ ...d, is_public: e.target.checked }))}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">Prodotto pubblico</label>
-                </div>
+                <ToggleSwitch
+                  checked={!!draft.is_public}
+                  onChange={(checked) => setDraft((d) => ({ ...d, is_public: checked }))}
+                  label="Prodotto pubblico"
+                />
               </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <button 
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
-                onClick={closeDetails}
-              >
-                Annulla
-              </button>
-              <button 
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200" 
-                onClick={saveDetails} 
-                disabled={!draft.name || !draft.id}
-              >
-                <Save className="h-4 w-4" />
-                Salva modifiche
-              </button>
+              
+              {/* Right column - Description */}
+              <div className="w-1/2 px-6 py-6 flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+                <textarea 
+                  className="flex-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
+                  value={draft.description ?? ""} 
+                  onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} 
+                  placeholder="Descrizione del prodotto"
+                />
+              </div>
             </div>
           </aside>
         </>
@@ -834,15 +1001,11 @@ export default function CategoriesPage() {
                   selectedExpertId={categoryDraft.expert_id}
                   onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
                 />
-                <div className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    checked={!!categoryDraft.is_public} 
-                    onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">Categoria pubblica</label>
-                </div>
+                <ToggleSwitch
+                  checked={!!categoryDraft.is_public}
+                  onChange={(checked) => setCategoryDraft((d) => ({ ...d, is_public: checked }))}
+                  label="Categoria pubblica"
+                />
               </div>
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <button 
@@ -870,102 +1033,105 @@ export default function CategoriesPage() {
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={() => setIsEditCategorySidebarOpen(false)} />
           <aside
             className="fixed top-0 right-0 h-screen bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl"
-            style={{ width: detailsWidth }}
+            style={{ width: detailsWidth * 2 }}
           >
             <div
               className="absolute left-0 top-0 h-full w-1 cursor-col-resize bg-transparent"
               onMouseDown={(e) => {
                 isResizingRef.current = true
                 startXRef.current = e.clientX
-                startWidthRef.current = detailsWidth
+                startWidthRef.current = detailsWidth * 2
                 document.body.style.cursor = "col-resize"
               }}
             />
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Modifica categoria</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-medium text-gray-900">Modifica categoria</h3>
+                {hasUnsavedChanges && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 transition-colors duration-200"
+                      onClick={saveCategoryChanges}
+                      title={`Salva modifiche (${navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}+S)`}
+                    >
+                      <Save className="h-3 w-3" />
+                      Salva
+                    </button>
+                    <button
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      onClick={cancelCategoryChanges}
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                )}
+              </div>
               <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={() => setIsEditCategorySidebarOpen(false)}>
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="px-6 py-6 space-y-6 overflow-auto">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome categoria</label>
-                                  <input 
+            
+            {/* Two column layout */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Left column - Category info */}
+              <div className="w-1/2 px-6 py-6 space-y-6 overflow-auto border-r border-gray-200">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome categoria</label>
+                  <input 
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200" 
                     value={categoryDraft.name} 
                     onChange={(e) => setCategoryDraft((d) => ({ ...d, name: e.target.value }))} 
                     placeholder="Nome della categoria"
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Esperto associato</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => document.dispatchEvent(new Event('open-expert-picker'))}
+                    >
+                      {categoryDraft.expert_id ? "Cambia esperto" : "Seleziona esperto…"}
+                    </button>
+                    {categoryDraft.expert_id && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200"
+                        title="Rimuovi selezione"
+                        onClick={() => setCategoryDraft((d) => ({ ...d, expert_id: "" }))}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {categoryDraft.expert_id && (
+                    <SelectedExpertPreview key={categoryDraft.expert_id} expertId={categoryDraft.expert_id} />
+                  )}
+                  <ExpertPicker
+                    selectedExpertId={categoryDraft.expert_id}
+                    onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
+                  />
+                </div>
+                
+                <ToggleSwitch
+                  checked={!!categoryDraft.is_public}
+                  onChange={(checked) => setCategoryDraft((d) => ({ ...d, is_public: checked }))}
+                  label="Categoria pubblica"
+                />
               </div>
-              <div>
+              
+              {/* Right column - Description */}
+              <div className="w-1/2 px-6 py-6 flex flex-col">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
                 <textarea 
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
-                  rows={3} 
+                  className="flex-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 resize-none" 
                   value={categoryDraft.category_description} 
                   onChange={(e) => setCategoryDraft((d) => ({ ...d, category_description: e.target.value }))} 
                   placeholder="Descrizione della categoria"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Esperto associato</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => document.dispatchEvent(new Event('open-expert-picker'))}
-                  >
-                    {categoryDraft.expert_id ? "Cambia esperto" : "Seleziona esperto…"}
-                  </button>
-                  {categoryDraft.expert_id && (
-                    <button
-                      type="button"
-                      className="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200"
-                      title="Rimuovi selezione"
-                      onClick={() => setCategoryDraft((d) => ({ ...d, expert_id: "" }))}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                {categoryDraft.expert_id && (
-                  <SelectedExpertPreview expertId={categoryDraft.expert_id} />
-                )}
-                <ExpertPicker
-                  selectedExpertId={categoryDraft.expert_id}
-                  onPick={(exp) => setCategoryDraft((d) => ({ ...d, expert_id: exp?.id || "" }))}
-                />
-              </div>
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  checked={!!categoryDraft.is_public} 
-                  onChange={(e) => setCategoryDraft((d) => ({ ...d, is_public: e.target.checked }))}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 text-sm text-gray-700">Categoria pubblica</label>
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <button 
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200" 
-                onClick={() => setIsEditCategorySidebarOpen(false)}
-              >
-                Annulla
-              </button>
-              <button
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200"
-                onClick={async () => {
-                  if (!editingCategoryId) return
-                  await updateCategory(editingCategoryId, categoryDraft)
-                  setIsEditCategorySidebarOpen(false)
-                  setEditingCategoryId(null)
-                }}
-                disabled={!categoryDraft.name}
-              >
-                <Save className="h-4 w-4" />
-                Salva modifiche
-              </button>
             </div>
           </aside>
           {/* Expert picker modal embedded in ExpertPicker component; nothing to render here */}
@@ -1028,15 +1194,11 @@ export default function CategoriesPage() {
                     placeholder="Descrizione del prodotto"
                   />
                 </div>
-                <div className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    checked={!!itemDraft.is_public} 
-                    onChange={(e) => setItemDraft((d) => ({ ...d, is_public: e.target.checked }))}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">Prodotto pubblico</label>
-                </div>
+                <ToggleSwitch
+                  checked={!!itemDraft.is_public}
+                  onChange={(checked) => setItemDraft((d) => ({ ...d, is_public: checked }))}
+                  label="Prodotto pubblico"
+                />
               </div>
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <button 
