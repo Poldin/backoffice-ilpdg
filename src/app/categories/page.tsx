@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink, Hash } from "lucide-react"
+import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink, Hash, Link2, Unlink } from "lucide-react"
 import { toast } from "sonner"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 import { generateSlug } from "@/app/lib/utils/slug"
@@ -26,6 +26,16 @@ type CategoryItem = {
   description: string | null
   image_url: string | null
   is_public: boolean | null
+}
+
+type SellingLink = {
+  id: string
+  created_at: string
+  name: string | null
+  link: string | null
+  descrizione: string | null
+  img_url: string | null
+  calltoaction: string | null
 }
 
 export default function CategoriesPage() {
@@ -60,6 +70,16 @@ export default function CategoriesPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [originalProductData, setOriginalProductData] = useState<Partial<CategoryItem> | null>(null)
   const [hasUnsavedProductChanges, setHasUnsavedProductChanges] = useState(false)
+  const [categoryLinks, setCategoryLinks] = useState<SellingLink[]>([])
+  const [productLinks, setProductLinks] = useState<SellingLink[]>([])
+  const [isAttachCategoryOpen, setIsAttachCategoryOpen] = useState(false)
+  const [isAttachProductOpen, setIsAttachProductOpen] = useState(false)
+  const [attachCategoryQuery, setAttachCategoryQuery] = useState("")
+  const [attachCategoryResults, setAttachCategoryResults] = useState<SellingLink[]>([])
+  const [attachCategoryLoading, setAttachCategoryLoading] = useState(false)
+  const [attachProductQuery, setAttachProductQuery] = useState("")
+  const [attachProductResults, setAttachProductResults] = useState<SellingLink[]>([])
+  const [attachProductLoading, setAttachProductLoading] = useState(false)
   const isResizingRef = useRef(false)
   const startXRef = useRef(0)
   const startWidthRef = useRef(560)
@@ -112,6 +132,14 @@ export default function CategoriesPage() {
   }, [selectedItemId])
 
   useEffect(() => {
+    if (selectedItemId) {
+      refreshProductLinks(selectedItemId)
+    } else {
+      setProductLinks([])
+    }
+  }, [selectedItemId])
+
+  useEffect(() => {
     function onMove(e: MouseEvent) {
       if (!isResizingRef.current) return
       const delta = (startXRef.current - e.clientX) * -1 // dragging from left edge to right
@@ -133,6 +161,119 @@ export default function CategoriesPage() {
       window.removeEventListener("mouseup", onUp)
     }
   }, [isResizingRef.current])
+
+  async function refreshCategoryLinks(categoryId: string) {
+    const res = await fetch(`/api/selling-links?category_id=${encodeURIComponent(categoryId)}`)
+    const data = await res.json()
+    setCategoryLinks(Array.isArray(data) ? data : [])
+  }
+
+  async function refreshProductLinks(itemId: string) {
+    const res = await fetch(`/api/selling-links?item_id=${encodeURIComponent(itemId)}`)
+    const data = await res.json()
+    setProductLinks(Array.isArray(data) ? data : [])
+  }
+
+  async function attachLinkToCategory(linkId: string) {
+    if (!editingCategoryId) return
+    const res = await fetch("/api/selling-links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "attach", target: "category", target_id: editingCategoryId, selling_link_id: linkId }),
+    })
+    const data = await res.json()
+    if (data?.error) return toast.error(data.error)
+    toast.success("Link associato alla categoria")
+    setIsAttachCategoryOpen(false)
+    setAttachCategoryQuery("")
+    await refreshCategoryLinks(editingCategoryId)
+  }
+
+  async function detachLinkFromCategory(linkId: string) {
+    if (!editingCategoryId) return
+    const res = await fetch(`/api/selling-links?type=detach&target=category&target_id=${encodeURIComponent(editingCategoryId)}&selling_link_id=${encodeURIComponent(linkId)}`, { method: "DELETE" })
+    const data = await res.json()
+    if (data?.error) return toast.error(data.error)
+    toast.success("Associazione rimossa")
+    await refreshCategoryLinks(editingCategoryId)
+  }
+
+  async function attachLinkToProduct(linkId: string) {
+    if (!selectedItemId) return
+    const res = await fetch("/api/selling-links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "attach", target: "item", target_id: selectedItemId, selling_link_id: linkId }),
+    })
+    const data = await res.json()
+    if (data?.error) return toast.error(data.error)
+    toast.success("Link associato al prodotto")
+    setIsAttachProductOpen(false)
+    setAttachProductQuery("")
+    await refreshProductLinks(selectedItemId)
+  }
+
+  async function detachLinkFromProduct(linkId: string) {
+    if (!selectedItemId) return
+    const res = await fetch(`/api/selling-links?type=detach&target=item&target_id=${encodeURIComponent(selectedItemId)}&selling_link_id=${encodeURIComponent(linkId)}`, { method: "DELETE" })
+    const data = await res.json()
+    if (data?.error) return toast.error(data.error)
+    toast.success("Associazione rimossa")
+    await refreshProductLinks(selectedItemId)
+  }
+
+  // search selling links when attach modals are open
+  useEffect(() => {
+    if (!isAttachCategoryOpen) return
+    let active = true
+    setAttachCategoryLoading(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(async () => {
+      try {
+        const url = attachCategoryQuery.trim() ? `/api/selling-links?q=${encodeURIComponent(attachCategoryQuery.trim())}` : "/api/selling-links"
+        const res = await fetch(url, { signal: controller.signal })
+        const data = await res.json()
+        if (!active) return
+        setAttachCategoryResults(Array.isArray(data) ? data : [])
+      } catch {
+        if (!active) return
+        setAttachCategoryResults([])
+      } finally {
+        if (active) setAttachCategoryLoading(false)
+      }
+    }, 250)
+    return () => {
+      active = false
+      controller.abort()
+      clearTimeout(timeout)
+    }
+  }, [attachCategoryQuery, isAttachCategoryOpen])
+
+  useEffect(() => {
+    if (!isAttachProductOpen) return
+    let active = true
+    setAttachProductLoading(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(async () => {
+      try {
+        const url = attachProductQuery.trim() ? `/api/selling-links?q=${encodeURIComponent(attachProductQuery.trim())}` : "/api/selling-links"
+        const res = await fetch(url, { signal: controller.signal })
+        const data = await res.json()
+        if (!active) return
+        setAttachProductResults(Array.isArray(data) ? data : [])
+      } catch {
+        if (!active) return
+        setAttachProductResults([])
+      } finally {
+        if (active) setAttachProductLoading(false)
+      }
+    }, 250)
+    return () => {
+      active = false
+      controller.abort()
+      clearTimeout(timeout)
+    }
+  }, [attachProductQuery, isAttachProductOpen])
 
   async function createCategory(payload: { name: string; slug: string; is_public: boolean }) {
     const res = await fetch("/api/categories", {
@@ -732,6 +873,7 @@ export default function CategoriesPage() {
                             setOriginalCategoryData({ ...originalData })
                             setHasUnsavedChanges(false)
                             setIsEditCategorySidebarOpen(true)
+                            refreshCategoryLinks(c.id)
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -989,6 +1131,33 @@ export default function CategoriesPage() {
                   onChange={(checked) => setDraft((d) => ({ ...d, is_public: checked }))}
                   label="Prodotto pubblico"
                 />
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-900">Selling links associati</h4>
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsAttachProductOpen(true)}
+                    >
+                      Associa link
+                    </button>
+                  </div>
+                  {productLinks.length === 0 ? (
+                    <div className="text-sm text-gray-500">Nessun link associato</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {productLinks.map((l) => (
+                        <span key={l.id} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 text-gray-800 text-xs">
+                          {l.name || "(senza nome)"}
+                          <button className="ml-1 text-red-500 hover:text-red-700" title="Rimuovi" onClick={() => detachLinkFromProduct(l.id)}>
+                            <Unlink className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* Right column - Description */}
@@ -1066,6 +1235,33 @@ export default function CategoriesPage() {
                   onChange={(checked) => setCategoryDraft((d) => ({ ...d, is_public: checked }))}
                   label="Categoria pubblica"
                 />
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-900">Selling links associati</h4>
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsAttachCategoryOpen(true)}
+                    >
+                      Associa link
+                    </button>
+                  </div>
+                  {categoryLinks.length === 0 ? (
+                    <div className="text-sm text-gray-500">Nessun link associato</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {categoryLinks.map((l) => (
+                        <span key={l.id} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 text-gray-800 text-xs">
+                          {l.name || "(senza nome)"}
+                          <button className="ml-1 text-red-500 hover:text-red-700" title="Rimuovi" onClick={() => detachLinkFromCategory(l.id)}>
+                            <Unlink className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <button 
@@ -1216,6 +1412,49 @@ export default function CategoriesPage() {
             </div>
           </aside>
           {/* Expert picker modal embedded in ExpertPicker component; nothing to render here */}
+          {isAttachCategoryOpen && (
+            <>
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={() => setIsAttachCategoryOpen(false)} />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="w-full max-w-lg rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-gray-900">Associa link alla categoria</h3>
+                    <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={() => setIsAttachCategoryOpen(false)}>
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="px-6 py-6 space-y-4">
+                    <input
+                      autoFocus
+                      placeholder="Cerca link…"
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
+                      value={attachCategoryQuery}
+                      onChange={(e) => setAttachCategoryQuery(e.target.value)}
+                    />
+                    <div className="max-h-80 overflow-auto border border-gray-200 rounded-lg divide-y divide-gray-200">
+                      {attachCategoryLoading ? (
+                        <div className="p-4 text-sm text-gray-700">Caricamento…</div>
+                      ) : attachCategoryResults.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-700">Nessun risultato</div>
+                      ) : (
+                        <div>
+                          {attachCategoryResults.map((r) => (
+                            <button
+                              key={r.id}
+                              className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 transition-colors duration-200"
+                              onClick={() => attachLinkToCategory(r.id)}
+                            >
+                              <span className="text-sm font-medium text-gray-900">{r.name || "(senza nome)"}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -1316,6 +1555,50 @@ export default function CategoriesPage() {
                   <Save className="h-4 w-4" />
                   Crea prodotto
                 </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {isAttachProductOpen && selectedItemId && (
+        <>
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40" role="button" tabIndex={-1} onClick={() => setIsAttachProductOpen(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Associa link al prodotto</h3>
+                <button className="inline-flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" title="Chiudi" onClick={() => setIsAttachProductOpen(false)}>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="px-6 py-6 space-y-4">
+                <input
+                  autoFocus
+                  placeholder="Cerca link…"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
+                  value={attachProductQuery}
+                  onChange={(e) => setAttachProductQuery(e.target.value)}
+                />
+                <div className="max-h-80 overflow-auto border border-gray-200 rounded-lg divide-y divide-gray-200">
+                  {attachProductLoading ? (
+                    <div className="p-4 text-sm text-gray-700">Caricamento…</div>
+                  ) : attachProductResults.length === 0 ? (
+                    <div className="p-4 text-sm text-gray-700">Nessun risultato</div>
+                  ) : (
+                    <div>
+                      {attachProductResults.map((r) => (
+                        <button
+                          key={r.id}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 transition-colors duration-200"
+                          onClick={() => attachLinkToProduct(r.id)}
+                        >
+                          <span className="text-sm font-medium text-gray-900">{r.name || "(senza nome)"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen, ExternalLink, Users } from "lucide-react"
+import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen, ExternalLink, Users, Link2 } from "lucide-react"
 
 type NavItem = {
   href: string
@@ -16,6 +16,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/cover", label: "Cover", icon: <Image className="h-5 w-5" /> },
   { href: "/categories", label: "Categories", icon: <FolderTree className="h-5 w-5" /> },
+  { href: "/selling-links", label: "Selling Links", icon: <Link2 className="h-5 w-5" /> },
   { href: "/users", label: "Gestione Utenti", icon: <Users className="h-5 w-5" /> },
   {
     href: "https://analytics.google.com/analytics/web/?hl=it#/p498367036/reports/intelligenthome",

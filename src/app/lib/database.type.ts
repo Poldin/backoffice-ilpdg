@@ -39,6 +39,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      link_category_sellinglink: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: number
+          selling_link_id: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: number
+          selling_link_id?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: number
+          selling_link_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_category_sellinglink_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "products_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_category_sellinglink_selling_link_id_fkey"
+            columns: ["selling_link_id"]
+            isOneToOne: false
+            referencedRelation: "selling_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_items_sellinglinks: {
+        Row: {
+          created_at: string
+          id: number
+          item_id: string | null
+          sellinglink_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          item_id?: string | null
+          sellinglink_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          item_id?: string | null
+          sellinglink_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_items_sellinglinks_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "products_categories_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_items_sellinglinks_sellinglink_id_fkey"
+            columns: ["sellinglink_id"]
+            isOneToOne: false
+            referencedRelation: "selling_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products_categories: {
         Row: {
           category_description: string | null
@@ -189,23 +261,32 @@ export type Database = {
         }
         Relationships: []
       }
-      seller: {
+      selling_links: {
         Row: {
+          calltoaction: string | null
           created_at: string
+          descrizione: string | null
           id: string
           img_url: string | null
+          link: string | null
           name: string | null
         }
         Insert: {
+          calltoaction?: string | null
           created_at?: string
+          descrizione?: string | null
           id?: string
           img_url?: string | null
+          link?: string | null
           name?: string | null
         }
         Update: {
+          calltoaction?: string | null
           created_at?: string
+          descrizione?: string | null
           id?: string
           img_url?: string | null
+          link?: string | null
           name?: string | null
         }
         Relationships: []
@@ -215,7 +296,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      bonifica_slug_products_categories_items: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          nome_originale: string
+          record_id: string
+          slug_generato: string
+          stato: string
+        }[]
+      }
+      create_slug_from_text: {
+        Args: { input_text: string }
+        Returns: string
+      }
     }
     Enums: {
       user_role: "super_admin" | "admin" | "expert"
