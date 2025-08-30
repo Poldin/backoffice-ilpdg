@@ -111,6 +111,82 @@ export type Database = {
           },
         ]
       }
+      product_images: {
+        Row: {
+          created_at: string
+          id: number
+          img_url: string | null
+          product_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          img_url?: string | null
+          product_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          img_url?: string | null
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          data: Json | null
+          description: string | null
+          edited_at: string | null
+          id: string
+          name: string | null
+          price: number | null
+          price_currency: string | null
+          profile_id: string | null
+          selling_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          description?: string | null
+          edited_at?: string | null
+          id?: string
+          name?: string | null
+          price?: number | null
+          price_currency?: string | null
+          profile_id?: string | null
+          selling_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          description?: string | null
+          edited_at?: string | null
+          id?: string
+          name?: string | null
+          price?: number | null
+          price_currency?: string | null
+          profile_id?: string | null
+          selling_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products_categories: {
         Row: {
           category_description: string | null
@@ -236,7 +312,7 @@ export type Database = {
           id: string
           img_url: string | null
           nome: string | null
-          role: Database["public"]["Enums"]["user_role"] | null
+          role: string | null
           user_id: string | null
         }
         Insert: {
@@ -246,7 +322,7 @@ export type Database = {
           id?: string
           img_url?: string | null
           nome?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: string | null
           user_id?: string | null
         }
         Update: {
@@ -256,7 +332,7 @@ export type Database = {
           id?: string
           img_url?: string | null
           nome?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: string | null
           user_id?: string | null
         }
         Relationships: []

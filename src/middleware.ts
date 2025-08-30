@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/app/lib/database.type"
+import { hasAccess, PUBLIC_ROUTES, isValidRole, getDefaultRoute, type UserRole } from "@/app/lib/acl"
 
 // Public routes that do not require auth
-const PUBLIC_PATHS = new Set<string>(["/", "/login", "/reset-password", "/auth/callback"])
+const PUBLIC_PATHS = new Set<string>(PUBLIC_ROUTES)
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
@@ -73,6 +74,29 @@ export async function middleware(req: NextRequest) {
       isPublic,
     })
 
+    // Ottieni il ruolo utente se la sessione esiste
+    let userRole: UserRole | null = null
+    if (session?.user?.id) {
+      try {
+        const { data: profile } = await supabase
+          .from('profile')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single()
+        
+        if (profile?.role && isValidRole(profile.role)) {
+          userRole = profile.role
+        }
+        
+        console.log('[MW]', requestId, 'user role', {
+          userId: session.user.id,
+          role: userRole,
+        })
+      } catch (roleError) {
+        console.error('[MW]', requestId, 'error fetching user role', roleError)
+      }
+    }
+
     // If there's an error getting session, clear cookies and allow access to public routes
     if (error) {
       console.error('[MW]', requestId, 'auth.getSession error', {
@@ -96,11 +120,14 @@ export async function middleware(req: NextRequest) {
       return res
     }
 
-    // If the user is authenticated and hits login, redirect to profile
-    if (isPublic && pathname === "/login" && session) {
+    // If the user is authenticated and hits login or register, redirect to their default route
+    if (isPublic && (pathname === "/login" || pathname === "/register") && session && userRole) {
       const url = req.nextUrl.clone()
-      url.pathname = "/profile"
-      console.log('[MW]', requestId, 'redirect authenticated user away from /login to /profile')
+      url.pathname = getDefaultRoute(userRole)
+      console.log('[MW]', requestId, 'redirect authenticated user away from auth pages', {
+        role: userRole,
+        redirectTo: url.pathname
+      })
       return NextResponse.redirect(url)
     }
 
@@ -110,6 +137,24 @@ export async function middleware(req: NextRequest) {
       url.pathname = "/login"
       url.searchParams.set("redirect", pathname)
       console.log('[MW]', requestId, 'redirect unauthenticated user to /login', { redirectFrom: pathname })
+      return NextResponse.redirect(url)
+    }
+
+    // Check role-based access control for authenticated users
+    if (session && !hasAccess(userRole, pathname)) {
+      const url = req.nextUrl.clone()
+      // Redirect to their default allowed route
+      if (userRole) {
+        url.pathname = getDefaultRoute(userRole)
+      } else {
+        url.pathname = "/login"
+      }
+      console.log('[MW]', requestId, 'access denied - redirecting', {
+        userId: session.user.id,
+        role: userRole,
+        requestedPath: pathname,
+        redirectTo: url.pathname
+      })
       return NextResponse.redirect(url)
     }
 

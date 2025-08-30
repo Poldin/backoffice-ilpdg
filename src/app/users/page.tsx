@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Eye, EyeOff, Trash2, Plus, Save, X, Mail, UserCheck, UserX, Edit3, RefreshCw, Upload, ImageIcon } from "lucide-react"
+import {  Trash2, Plus, Save, X, UserCheck, UserX, Edit3, RefreshCw, Upload, ImageIcon } from "lucide-react"
+import Image from "next/image"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 import { toast } from "sonner"
 
@@ -63,7 +64,7 @@ export default function UsersPage() {
       const res = await fetch("/api/users")
       const data = await res.json()
       setUsers(Array.isArray(data) ? data : [])
-    } catch (error) {
+    } catch {
       toast.error("Errore nel caricamento degli utenti")
       setUsers([])
     } finally {
@@ -353,9 +354,11 @@ export default function UsersPage() {
                     <div className="flex items-center gap-6 min-w-0 flex-1">
                       <div className="h-40 w-40 shrink-0 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
                         {profile?.img_url ? (
-                          <img
+                          <Image
                             src={profile.img_url}
                             alt={profile.nome || user.email}
+                            width={160}
+                            height={160}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -457,7 +460,7 @@ export default function UsersPage() {
                   <div className="flex items-start gap-4">
                     <div className="h-full w-fit rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
                       {draft.img_url ? (
-                        <img src={draft.img_url} alt="Profilo" className="h-full w-full object-cover" />
+                        <Image src={draft.img_url} alt="Profilo" className="h-full w-full object-cover" />
                       ) : (
                         <div className="text-2xl text-gray-400">
                           <ImageIcon className="h-8 w-8" />
@@ -576,7 +579,7 @@ export default function UsersPage() {
                   <div className="flex items-start gap-4">
                     <div className="h-20 w-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
                       {draft.img_url ? (
-                        <img src={draft.img_url} alt="Profilo" className="h-full w-full object-cover" />
+                        <Image src={draft.img_url} alt="Profilo" className="h-full w-full object-cover" />
                       ) : (
                         <div className="text-2xl text-gray-400">
                           <ImageIcon className="h-8 w-8" />

@@ -47,7 +47,7 @@ export async function GET() {
     })
 
     return NextResponse.json(usersWithProfiles)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 })
   }
 }
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       profile: profileData 
     }, { status: 201 })
 
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 })
   }
 }
@@ -194,7 +194,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ profile: profileData })
 
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 })
   }
 }
@@ -230,7 +230,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
 
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 })
   }
 }

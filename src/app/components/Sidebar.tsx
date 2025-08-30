@@ -4,6 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen, ExternalLink, Users, Link2 } from "lucide-react"
+import { getAccessibleRoutes, type UserRole } from "@/app/lib/acl"
+import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 
 type NavItem = {
   href: string
@@ -13,26 +15,64 @@ type NavItem = {
   external?: boolean
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/cover", label: "Cover", icon: <Image className="h-5 w-5" /> },
-  { href: "/categories", label: "Categories", icon: <FolderTree className="h-5 w-5" /> },
-  { href: "/selling-links", label: "Selling Links", icon: <Link2 className="h-5 w-5" /> },
-  { href: "/users", label: "Gestione Utenti", icon: <Users className="h-5 w-5" /> },
-  {
-    href: "https://analytics.google.com/analytics/web/?hl=it#/p498367036/reports/intelligenthome",
-    label: "Google Analytics",
-    icon: <ExternalLink className="h-5 w-5" />,
-    external: true,
-  },
-  { href: "/profile", label: "Profilo", icon: <User className="h-5 w-5" />, position: "bottom" },
-  { href: "/logout", label: "Logout", icon: <LogOut className="h-5 w-5" />, position: "bottom" },
-]
+// Mappa per associare le icone ai path
+const ICON_MAP: Record<string, React.ReactNode> = {
+  "/cover": <Image className="h-5 w-5" />,
+  "/categories": <FolderTree className="h-5 w-5" />,
+  "/selling-links": <Link2 className="h-5 w-5" />,
+  "/users": <Users className="h-5 w-5" />,
+  "https://analytics.google.com/analytics/web/?hl=it#/p498367036/reports/intelligenthome": <ExternalLink className="h-5 w-5" />,
+  "/brand/products": <Image className="h-5 w-5" />,
+  "/brand/links": <Link2 className="h-5 w-5" />,
+  "/profile": <User className="h-5 w-5" />,
+  "/logout": <LogOut className="h-5 w-5" />,
+}
 
 const LOCAL_STORAGE_KEY = "sidebar:collapsed"
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [navItems, setNavItems] = useState<NavItem[]>([])
+
+  // Carica il ruolo utente e genera i nav items
+  useEffect(() => {
+    async function loadUserRole() {
+      try {
+        const supabase = getSupabaseBrowser()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user?.id) {
+          const { data: profile } = await supabase
+            .from('profile')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single()
+          
+          if (profile?.role) {
+            setUserRole(profile.role as UserRole)
+            
+            // Genera i nav items basati sui permessi
+            const accessibleRoutes = getAccessibleRoutes(profile.role as UserRole)
+            const items: NavItem[] = accessibleRoutes.map(route => ({
+              href: route.path,
+              label: route.label,
+              icon: ICON_MAP[route.path] || <div className="h-5 w-5" />,
+              position: route.position,
+              external: route.external
+            }))
+            
+            setNavItems(items)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user role:', error)
+      }
+    }
+    
+    loadUserRole()
+  }, [])
 
   useEffect(() => {
     try {
@@ -51,8 +91,8 @@ export default function Sidebar() {
     }
   }, [isCollapsed])
 
-  const topItems = NAV_ITEMS.filter((i) => i.position !== "bottom")
-  const bottomItems = NAV_ITEMS.filter((i) => i.position === "bottom")
+  const topItems = navItems.filter((i: NavItem) => i.position !== "bottom")
+  const bottomItems = navItems.filter((i: NavItem) => i.position === "bottom")
 
   return (
     <aside
@@ -66,7 +106,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2 overflow-hidden">
 
           {!isCollapsed && (
-            <span className="font-semibold text-sm whitespace-nowrap">Backoffice - ilPDG</span>
+            <span className="font-semibold text-sm whitespace-nowrap">back.bant1.com</span>
           )}
         </div>
         <button
@@ -81,7 +121,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-2">
         <ul className="space-y-1">
-          {topItems.map((item) => {
+          {topItems.map((item: NavItem) => {
             const isActive = pathname?.startsWith(item.href)
             return (
               <li key={item.href}>
@@ -108,7 +148,7 @@ export default function Sidebar() {
 
       <div className="px-2 pb-3">
         <ul className="space-y-1">
-          {bottomItems.map((item) => {
+          {bottomItems.map((item: NavItem) => {
             const isActive = pathname === item.href
             return (
               <li key={item.href}>

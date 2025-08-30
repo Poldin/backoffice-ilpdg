@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink, Hash, Link2, Unlink } from "lucide-react"
+import { Eye, EyeOff, Trash2, Save, X, Upload, Plus, Pencil, ExternalLink, Hash, Unlink } from "lucide-react"
 import { toast } from "sonner"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 import { generateSlug } from "@/app/lib/utils/slug"

@@ -7,7 +7,7 @@ import { Check, Circle, Loader2, Plus, Trash2, ArrowLeft, Upload } from "lucide-
 import { toast } from "sonner"
 import type { Category, CategoryItem } from "@/app/lib/types"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
-
+import Image from "next/image"
 type RowState = "idle" | "saving" | "saved" | "error"
 
 type Editable = Pick<CategoryItem, "id" | "name" | "description" | "image_url" | "is_public"> & {
@@ -53,7 +53,7 @@ export default function CategoryTableEditorPage() {
           }))
         setRows(filtered)
         setStates(Object.fromEntries(filtered.map((r) => [r.id, "idle" as RowState])))
-      } catch (e) {
+      } catch {
         toast.error("Errore nel caricamento")
       } finally {
         if (active) setLoading(false)
@@ -88,7 +88,7 @@ export default function CategoryTableEditorPage() {
       markState(row.id, "saved")
       // fade back to idle
       setTimeout(() => markState(row.id, "idle"), 800)
-    } catch (e) {
+    } catch {
       markState(row.id, "error")
       toast.error("Salvataggio fallito")
     }
@@ -138,7 +138,7 @@ export default function CategoryTableEditorPage() {
       }
       setRows((prev) => [row, ...prev])
       setStates((prev) => ({ ...prev, [row.id]: "idle" }))
-    } catch (e) {
+    } catch {
       toast.error("Creazione riga fallita")
     } finally {
       setCreating(false)
@@ -153,10 +153,10 @@ export default function CategoryTableEditorPage() {
       if (!res.ok) throw new Error()
       setRows((prev) => prev.filter((r) => r.id !== id))
       setStates((prev) => {
-        const { [id]: _removed, ...rest } = prev
+        const { [id]: _, ...rest } = prev
         return rest
       })
-    } catch (e) {
+    } catch {
       toast.error("Eliminazione fallita")
     }
   }
@@ -218,7 +218,7 @@ export default function CategoryTableEditorPage() {
       }
       updateCell(rowId, { image_url: "" })
       toast.success("Immagine rimossa")
-    } catch (e) {
+    } catch {
       toast.error("Rimozione immagine fallita")
     }
   }
@@ -308,7 +308,7 @@ export default function CategoryTableEditorPage() {
                             <div className="h-16 w-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
                               {r.image_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={r.image_url} alt={r.name || "Immagine"} className="h-full w-full object-cover" />
+                                <Image src={r.image_url} alt={r.name || "Immagine"} className="h-full w-full object-cover" />
                               ) : (
                                 <div className="text-xs text-gray-700">N/A</div>
                               )}

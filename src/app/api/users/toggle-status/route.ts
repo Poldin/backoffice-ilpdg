@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
 
     // Se banned è true, imposta una data futura per il ban
     // Se banned è false, rimuove il ban
-    const banUntil = banned ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       ban_duration: banned ? "876000h" : "none" // 876000h = ~100 anni per ban permanente
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, banned })
 
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 })
   }
 }
