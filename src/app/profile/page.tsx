@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Eye, EyeOff, Check, X, Upload, Trash2, User, Loader2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Eye, EyeOff, Check, X, Upload, Trash2, User, Loader2, Copy, Plus } from "lucide-react"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 import type { Tables } from "@/app/lib/database.type"
 import { toast } from "sonner"
@@ -22,6 +22,17 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
+  
+  // Token management state
+  const [tokens, setTokens] = useState<Array<{ id: string; created_at: string; nome: string | null }>>([])
+  const [tokensLoading, setTokensLoading] = useState(false)
+  const [newTokenName, setNewTokenName] = useState("")
+  const tokenNameInputRef = useRef<HTMLInputElement | null>(null)
+  const [tokenNameError, setTokenNameError] = useState(false)
+  const [creatingToken, setCreatingToken] = useState(false)
+  const [showTokenModal, setShowTokenModal] = useState(false)
+  const [createdTokenValue, setCreatedTokenValue] = useState<string | null>(null)
+  const [createdTokenName, setCreatedTokenName] = useState<string>("")
   
   // Stati per i campi editabili del profilo
   const [nome, setNome] = useState<string>("")
@@ -303,6 +314,83 @@ export default function ProfilePage() {
     run()
   }, [])
 
+  // Load tokens after profile is available
+  useEffect(() => {
+    if (!loading && !error && profile) {
+      void loadTokens()
+    }
+  }, [loading, error, profile])
+
+  async function loadTokens() {
+    try {
+      setTokensLoading(true)
+      const res = await fetch("/api/profile/tokens", { method: "GET" })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || "Impossibile caricare i token")
+      }
+      const data = await res.json()
+      setTokens(Array.isArray(data) ? data : [])
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Errore sconosciuto"
+      toast.error("Errore nel caricamento dei token", { description: message })
+    } finally {
+      setTokensLoading(false)
+    }
+  }
+
+  async function createToken(e: React.FormEvent) {
+    e.preventDefault()
+    const nome = newTokenName.trim()
+    if (!nome) {
+      setTokenNameError(true)
+      tokenNameInputRef.current?.focus()
+      return
+    }
+    setCreatingToken(true)
+    try {
+      const res = await fetch("/api/profile/tokens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || "Impossibile creare il token")
+      }
+      const data: { id: string; created_at: string; nome: string | null; token: string } = await res.json()
+      setTokens(prev => [{ id: data.id, created_at: data.created_at, nome: data.nome }, ...prev])
+      setCreatedTokenValue(data.token)
+      setCreatedTokenName(data.nome || nome)
+      setShowTokenModal(true)
+      setNewTokenName("")
+      setTokenNameError(false)
+      toast.success("Token creato", { description: "Copia e conserva il token ora: non sarà più mostrato" })
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Errore sconosciuto"
+      toast.error("Errore nella creazione del token", { description: message })
+    } finally {
+      setCreatingToken(false)
+    }
+  }
+
+  async function deleteToken(id: string) {
+    const confirmed = window.confirm("Eliminare questo token? L'azione è irreversibile.")
+    if (!confirmed) return
+    try {
+      const res = await fetch(`/api/profile/tokens/${id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || "Impossibile eliminare il token")
+      }
+      setTokens(prev => prev.filter(t => t.id !== id))
+      toast.success("Token eliminato")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Errore sconosciuto"
+      toast.error("Errore nell'eliminazione del token", { description: message })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -503,6 +591,80 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {!loading && !error && (
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mt-6">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Token API</h2>
+              <p className="text-sm text-gray-500 mt-1">Crea e gestisci i tuoi token personali. Il valore del token è visibile solo al momento della creazione.</p>
+            </div>
+            <div className="px-6 py-6 space-y-6">
+              <form onSubmit={createToken} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  ref={tokenNameInputRef}
+                  type="text"
+                  value={newTokenName}
+                  onChange={(e) => { setNewTokenName(e.target.value); if (tokenNameError) setTokenNameError(false) }}
+                  placeholder="Inserisci il nome del token"
+                  className={`flex-1 px-3 py-2 border rounded-md leading-5 bg-white placeholder-gray-500 text-gray-700 focus:outline-none focus:ring-1 sm:text-sm ${tokenNameError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
+                />
+                <button
+                  type="submit"
+                  disabled={creatingToken}
+                  className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingToken ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Crea token
+                    </>
+                  )}
+                </button>
+              </form>
+              {tokenNameError && (
+                <p className="text-xs text-red-600">Inserisci un nome per il token.</p>
+              )}
+
+              <div className="border border-gray-200 rounded-md overflow-hidden">
+                <div className="min-w-full divide-y divide-gray-200">
+                  <div className="bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500 grid grid-cols-12">
+                    <div className="col-span-6 sm:col-span-6">Nome</div>
+                    <div className="col-span-4 sm:col-span-4">Creato il</div>
+                    <div className="col-span-2 sm:col-span-2 text-right">Azioni</div>
+                  </div>
+                  {tokensLoading ? (
+                    <div className="px-4 py-4 text-sm text-gray-500">Caricamento...</div>
+                  ) : tokens.length === 0 ? (
+                    <div className="px-4 py-6 text-sm text-gray-500">Nessun token creato.</div>
+                  ) : (
+                    tokens.map(t => (
+                      <div key={t.id} className="px-4 py-3 grid grid-cols-12 items-center">
+                        <div className="col-span-6 sm:col-span-6 text-sm text-gray-900 break-words">{t.nome || '—'}</div>
+                        <div className="col-span-4 sm:col-span-4 text-sm text-gray-500">{new Date(t.created_at).toLocaleString('it-IT')}</div>
+                        <div className="col-span-2 sm:col-span-2">
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => deleteToken(t.id)}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1.5" />
+                              Elimina
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modale Cambio Password */}
         {showPasswordModal && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
@@ -629,6 +791,54 @@ export default function ProfilePage() {
                   </div>
                 )}
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modale Token Creato - visibile una sola volta */}
+        {showTokenModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Token creato</h3>
+                <button
+                  onClick={() => { setShowTokenModal(false); setCreatedTokenValue(null) }}
+                  className="text-gray-400 hover:text-gray-500 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">Copia e conserva questo token ora. Per ragioni di sicurezza non sarà più mostrato in seguito.</p>
+              <div className="mb-2 text-sm text-gray-900"><span className="font-medium">Nome:</span> {createdTokenName || '—'}</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 block text-sm p-3 bg-gray-50 border border-gray-200 rounded-md overflow-x-auto">
+                  {createdTokenValue || '—'}
+                </code>
+                <button
+                  onClick={async () => {
+                    if (createdTokenValue) {
+                      try {
+                        await navigator.clipboard.writeText(createdTokenValue)
+                        toast.success("Token copiato negli appunti")
+                      } catch {
+                        toast.error("Impossibile copiare il token")
+                      }
+                    }
+                  }}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <Copy className="h-4 w-4 mr-1.5" />
+                  Copia
+                </button>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => { setShowTokenModal(false); setCreatedTokenValue(null) }}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Ho salvato il token
+                </button>
+              </div>
             </div>
           </div>
         )}

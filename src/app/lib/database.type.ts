@@ -337,6 +337,38 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_token: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string | null
+          profile_id: string | null
+          token: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome?: string | null
+          profile_id?: string | null
+          token?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string | null
+          profile_id?: string | null
+          token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_token_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       selling_links: {
         Row: {
           calltoaction: string | null
