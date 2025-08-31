@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen, ExternalLink, Users, Link2 } from "lucide-react"
+import { Image, FolderTree, User, LogOut, PanelLeftClose, PanelLeftOpen, ExternalLink, Users, Link2, Package } from "lucide-react"
 import { getAccessibleRoutes, type UserRole } from "@/app/lib/acl"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
 
@@ -22,7 +22,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   "/selling-links": <Link2 className="h-5 w-5" />,
   "/users": <Users className="h-5 w-5" />,
   "https://analytics.google.com/analytics/web/?hl=it#/p498367036/reports/intelligenthome": <ExternalLink className="h-5 w-5" />,
-  "/brand/products": <Image className="h-5 w-5" />,
+  "/brand/products": <Package className="h-5 w-5" />,
   "/brand/links": <Link2 className="h-5 w-5" />,
   "/profile": <User className="h-5 w-5" />,
   "/logout": <LogOut className="h-5 w-5" />,

@@ -146,6 +146,7 @@ export type Database = {
           data: Json | null
           description: string | null
           edited_at: string | null
+          fee_perc: number | null
           id: string
           name: string | null
           price: number | null
@@ -158,6 +159,7 @@ export type Database = {
           data?: Json | null
           description?: string | null
           edited_at?: string | null
+          fee_perc?: number | null
           id?: string
           name?: string | null
           price?: number | null
@@ -170,6 +172,7 @@ export type Database = {
           data?: Json | null
           description?: string | null
           edited_at?: string | null
+          fee_perc?: number | null
           id?: string
           name?: string | null
           price?: number | null

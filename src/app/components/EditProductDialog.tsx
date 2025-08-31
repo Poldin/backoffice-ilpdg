@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Save, X, Upload, DollarSign, Link as LinkIcon, FileText, Tag, Trash2, Loader2 } from 'lucide-react'
+import { Save, X, Upload, DollarSign, Link as LinkIcon, FileText, Tag, Trash2, Loader2, Percent } from 'lucide-react'
 import Dialog from './ui/Dialog'
 import { getSupabaseBrowser } from '@/app/lib/supabase/client'
 
@@ -18,6 +18,7 @@ interface ProductFormData {
   price: string
   price_currency: string
   selling_url: string
+  fee_perc: string
 }
 
 interface ProductImage {
@@ -40,7 +41,8 @@ export default function EditProductDialog({ isOpen, onClose, onProductUpdated, p
     description: '',
     price: '',
     price_currency: 'EUR',
-    selling_url: ''
+    selling_url: '',
+    fee_perc: ''
   })
   
   const [loading, setLoading] = useState(false)
@@ -102,7 +104,8 @@ export default function EditProductDialog({ isOpen, onClose, onProductUpdated, p
         description: product.description || '',
         price: product.price ? product.price.toString() : '',
         price_currency: product.price_currency || 'EUR',
-        selling_url: product.selling_url || ''
+        selling_url: product.selling_url || '',
+        fee_perc: product.fee_perc ? product.fee_perc.toString() : ''
       })
 
       // Carica le immagini esistenti
@@ -145,6 +148,10 @@ export default function EditProductDialog({ isOpen, onClose, onProductUpdated, p
     
     if (formData.price && isNaN(parseFloat(formData.price))) {
       return 'Il prezzo deve essere un numero valido'
+    }
+    
+    if (formData.fee_perc && (isNaN(parseFloat(formData.fee_perc)) || parseFloat(formData.fee_perc) < 0 || parseFloat(formData.fee_perc) > 100)) {
+      return 'La fee deve essere un numero valido tra 0 e 100'
     }
     
     if (formData.selling_url && !formData.selling_url.startsWith('http')) {
@@ -333,6 +340,7 @@ export default function EditProductDialog({ isOpen, onClose, onProductUpdated, p
         price: formData.price ? parseFloat(formData.price) : null,
         price_currency: formData.price_currency || null,
         selling_url: formData.selling_url.trim() || null,
+        fee_perc: formData.fee_perc ? parseFloat(formData.fee_perc) : null,
         edited_at: new Date().toISOString()
       }
 
@@ -372,7 +380,8 @@ export default function EditProductDialog({ isOpen, onClose, onProductUpdated, p
       description: '',
       price: '',
       price_currency: 'EUR',
-      selling_url: ''
+      selling_url: '',
+      fee_perc: ''
     })
     
     // Pulisci le immagini temporanee
@@ -489,6 +498,28 @@ export default function EditProductDialog({ isOpen, onClose, onProductUpdated, p
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* Fee Percentuale */}
+                <div>
+                  <label htmlFor="edit-fee_perc" className="block text-sm font-medium text-gray-700 mb-2">
+                    <Percent className="h-4 w-4 inline mr-1" />
+                    Fee Percentuale
+                  </label>
+                  <input
+                    type="number"
+                    id="edit-fee_perc"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={formData.fee_perc}
+                    onChange={(e) => handleInputChange('fee_perc', e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-700"
+                    placeholder="0.0"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Percentuale di commissione (0-100%)
+                  </p>
                 </div>
 
                 {/* URL di Vendita */}

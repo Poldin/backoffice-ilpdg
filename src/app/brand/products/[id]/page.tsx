@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Edit, ExternalLink, Calendar, DollarSign, Package } from "lucide-react"
+import { ArrowLeft, Edit, ExternalLink, Calendar, DollarSign, Package, Percent } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { getSupabaseBrowser } from "@/app/lib/supabase/client"
@@ -20,6 +20,7 @@ type Product = {
   edited_at: string | null
   profile_id: string | null
   data: unknown | null
+  fee_perc: number | null
 }
 
 type ProductImage = {
@@ -115,6 +116,11 @@ export default function ProductDetailPage() {
       style: 'currency',
       currency: currency || 'EUR'
     }).format(price)
+  }
+
+  function formatFeePercentage(feePerc: number | null) {
+    if (feePerc === null) return 'Non specificata'
+    return `${feePerc}%`
   }
 
   function formatDate(dateString: string) {
@@ -347,6 +353,16 @@ export default function ProductDetailPage() {
                     <p className="text-sm font-medium text-gray-900">Prezzo</p>
                     <p className="text-sm text-gray-500">
                       {formatPrice(product.price, product.price_currency)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Percent className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Fee Percentuale</p>
+                    <p className="text-sm text-gray-500">
+                      {formatFeePercentage(product.fee_perc)}
                     </p>
                   </div>
                 </div>
